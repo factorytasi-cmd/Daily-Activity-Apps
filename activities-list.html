@@ -58,16 +58,59 @@
     data.forEach(activity => {
       const row = document.createElement('div');
       row.className = 'manage-row';
-      row.innerHTML = `
-        <div>
-          <p class="mr-title">${escapeHtml(activity.subject)}</p>
-          <p class="mr-sub">${ringkasJadwal(activity)} &middot; ${activity.activity_time.slice(0,5)}</p>
-        </div>
-        <button class="mr-delete" aria-label="Hapus"><i class="ti ti-trash"></i></button>
-      `;
-      row.querySelector('.mr-delete').addEventListener('click', () => hapusActivity(activity.id, activity.subject));
+      row.dataset.id = activity.id;
+      renderViewMode(row, activity);
       container.appendChild(row);
     });
+  }
+
+  function renderViewMode(row, activity){
+    row.innerHTML = `
+      <div>
+        <p class="mr-title">${escapeHtml(activity.subject)}</p>
+        <p class="mr-sub">${ringkasJadwal(activity)} &middot; ${activity.activity_time.slice(0,5)}</p>
+      </div>
+      <button class="mr-edit" aria-label="Edit" style="margin-left:auto; background:none; border:none; color:var(--peach-light); font-size:16px; cursor:pointer; padding:4px;"><i class="ti ti-edit"></i></button>
+      <button class="mr-delete" aria-label="Hapus" style="margin-left:4px;"><i class="ti ti-trash"></i></button>
+    `;
+    row.querySelector('.mr-delete').addEventListener('click', () => hapusActivity(activity.id, activity.subject));
+    row.querySelector('.mr-edit').addEventListener('click', () => renderEditMode(row, activity));
+  }
+
+  function renderEditMode(row, activity){
+    row.innerHTML = `
+      <div style="flex:1;">
+        <input type="text" class="field-input edit-subject" value="${escapeHtml(activity.subject)}" style="margin-bottom:8px; padding:8px 10px;">
+        <input type="time" class="field-input edit-time" value="${activity.activity_time.slice(0,5)}" style="margin-bottom:0; padding:8px 10px;">
+        <p class="error-text edit-error" style="margin:6px 0 0;"></p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-left:8px;">
+        <button class="mr-save" aria-label="Simpan" style="background:var(--peach); border:none; border-radius:8px; width:30px; height:30px; color:var(--bg); cursor:pointer;"><i class="ti ti-check"></i></button>
+        <button class="mr-cancel" aria-label="Batal" style="background:var(--card-alt); border:none; border-radius:8px; width:30px; height:30px; color:var(--text-secondary); cursor:pointer;"><i class="ti ti-x"></i></button>
+      </div>
+    `;
+    row.querySelector('.mr-cancel').addEventListener('click', () => renderViewMode(row, activity));
+    row.querySelector('.mr-save').addEventListener('click', () => simpanEdit(row, activity));
+  }
+
+  async function simpanEdit(row, activity){
+    const newSubject = row.querySelector('.edit-subject').value.trim();
+    const newTime = row.querySelector('.edit-time').value;
+    const errorEl = row.querySelector('.edit-error');
+
+    if (!newSubject) { errorEl.textContent = 'Nama activity tidak boleh kosong.'; return; }
+    if (!newTime) { errorEl.textContent = 'Jam activity wajib diisi.'; return; }
+
+    const { error } = await supabaseClient
+      .from('activities')
+      .update({ subject: newSubject, activity_time: newTime })
+      .eq('id', activity.id);
+
+    if (error) { errorEl.textContent = error.message; return; }
+
+    activity.subject = newSubject;
+    activity.activity_time = newTime;
+    renderViewMode(row, activity);
   }
 
   async function hapusActivity(id, subject){
