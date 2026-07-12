@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LUSS — Kelola Activity</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 </head>
 <body>
 
@@ -13,7 +14,7 @@
 <div class="screen" id="screen" style="display:none;">
   <div class="top-bar">
     <div style="display:flex; align-items:center; gap:10px;">
-      <a href="daily-activity.html" class="icon-btn">&#8592;</a>
+      <a href="daily-activity.html" class="icon-btn"><i class="ti ti-arrow-left"></i></a>
       <span class="top-bar-title">Kelola activity</span>
     </div>
   </div>
@@ -62,7 +63,7 @@
           <p class="mr-title">${escapeHtml(activity.subject)}</p>
           <p class="mr-sub">${ringkasJadwal(activity)} &middot; ${activity.activity_time.slice(0,5)}</p>
         </div>
-        <button class="mr-delete" aria-label="Hapus">&#10005;</button>
+        <button class="mr-delete" aria-label="Hapus"><i class="ti ti-trash"></i></button>
       `;
       row.querySelector('.mr-delete').addEventListener('click', () => hapusActivity(activity.id, activity.subject));
       container.appendChild(row);

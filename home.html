@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LUSS — Home</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 </head>
 <body>
 
@@ -13,7 +14,9 @@
 <div class="screen" id="screen" style="display:none;">
   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;">
     <div style="display:flex; align-items:center; gap:8px;">
-      <div style="width:34px; height:34px; border-radius:10px; background:var(--peach); display:flex; align-items:center; justify-content:center; font-size:17px;">&#9889;</div>
+      <div style="width:34px; height:34px; border-radius:10px; background:var(--peach); display:flex; align-items:center; justify-content:center;">
+        <i class="ti ti-bolt" style="font-size:18px; color:var(--bg);"></i>
+      </div>
       <span style="font-size:19px; font-weight:600; letter-spacing:0.5px;">LUSS</span>
     </div>
     <div style="width:34px; height:34px; border-radius:50%; background:var(--card-alt); display:flex; align-items:center; justify-content:center; font-size:15px;" id="avatarInitial">?</div>
@@ -25,7 +28,9 @@
   </div>
 
   <a href="daily-activity.html" class="menu-card">
-    <div class="menu-icon" style="background:var(--peach); color:var(--bg);">&#128197;</div>
+    <div class="menu-icon" style="background:var(--peach);">
+      <i class="ti ti-calendar-check" style="color:var(--bg);"></i>
+    </div>
     <div>
       <p class="menu-title">Daily activity</p>
       <p class="menu-desc">Catat &amp; pantau rutinitas harianmu</p>
@@ -33,7 +38,9 @@
   </a>
 
   <a href="coming-soon.html?fitur=Project+Improvement" class="menu-card">
-    <div class="menu-icon" style="background:var(--peach-light); color:var(--bg);">&#128640;</div>
+    <div class="menu-icon" style="background:var(--peach-light);">
+      <i class="ti ti-rocket" style="color:var(--bg);"></i>
+    </div>
     <div>
       <p class="menu-title">Project improvement</p>
       <p class="menu-desc">Kelola progres &amp; target proyekmu</p>
@@ -41,7 +48,9 @@
   </a>
 
   <a href="coming-soon.html?fitur=Dashboard" class="menu-card">
-    <div class="menu-icon" style="background:#F5A889; color:var(--bg);">&#128202;</div>
+    <div class="menu-icon" style="background:#F5A889;">
+      <i class="ti ti-chart-bar" style="color:var(--bg);"></i>
+    </div>
     <div>
       <p class="menu-title">Dashboard</p>
       <p class="menu-desc">Lihat ringkasan performamu</p>
@@ -49,7 +58,9 @@
   </a>
 
   <div style="margin-top:30px; text-align:center;">
-    <button class="btn-outline-danger" id="logoutBtn" style="width:auto; padding:10px 20px;">Keluar</button>
+    <button class="btn-outline-danger" id="logoutBtn" style="width:auto; padding:10px 20px;">
+      <i class="ti ti-logout"></i> Keluar
+    </button>
   </div>
 </div>
 
@@ -58,7 +69,7 @@
 <script>
   (async function init(){
     const auth = await requireAuth();
-    if (!auth) return; // sudah dilempar ke index.html oleh requireAuth()
+    if (!auth) return;
 
     const { profile } = auth;
     const name = profile.full_name || profile.username || 'kamu';

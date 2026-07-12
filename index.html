@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LUSS — Masuk</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 </head>
 <body>
 
 <div class="screen" id="screen">
   <div class="brand">
-    <div class="brand-icon">&#9889;</div>
+    <div class="brand-icon"><i class="ti ti-bolt" style="color:var(--bg);"></i></div>
     <div class="brand-name">LUSS</div>
     <div class="brand-tagline">Level Up &amp; Stay Strong</div>
   </div>
@@ -28,7 +29,7 @@
     <p class="field-label">Password</p>
     <div class="input-wrapper">
       <input class="field-input" type="password" id="loginPassword" placeholder="Masukkan password" required>
-      <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Tampilkan password">&#128065;</button>
+      <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Tampilkan password"><i class="ti ti-eye"></i></button>
     </div>
 
     <p class="error-text" id="loginError"></p>
@@ -47,7 +48,7 @@
     <p class="field-label">Password</p>
     <div class="input-wrapper">
       <input class="field-input" type="password" id="signupPassword" placeholder="Minimal 6 karakter" minlength="6" required>
-      <button type="button" class="toggle-password" data-target="signupPassword" aria-label="Tampilkan password">&#128065;</button>
+      <button type="button" class="toggle-password" data-target="signupPassword" aria-label="Tampilkan password"><i class="ti ti-eye"></i></button>
     </div>
 
     <p class="error-text" id="signupError"></p>
@@ -143,9 +144,10 @@
   document.querySelectorAll('.toggle-password').forEach(btn => {
     btn.addEventListener('click', () => {
       const input = document.getElementById(btn.dataset.target);
+      const icon = btn.querySelector('i');
       const isHidden = input.type === 'password';
       input.type = isHidden ? 'text' : 'password';
-      btn.style.opacity = isHidden ? '1' : '0.55';
+      icon.className = isHidden ? 'ti ti-eye-off' : 'ti ti-eye';
     });
   });
 </script>

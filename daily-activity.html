@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LUSS — Daily Activity</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 </head>
 <body>
 
@@ -13,12 +14,12 @@
 <div class="screen" id="screen" style="display:none; padding-bottom:110px;">
   <div class="top-bar">
     <div style="display:flex; align-items:center; gap:10px;">
-      <a href="home.html" class="icon-btn">&#8592;</a>
+      <a href="home.html" class="icon-btn"><i class="ti ti-arrow-left"></i></a>
       <span class="top-bar-title">Daily activity</span>
     </div>
     <div class="top-bar-actions">
-      <a href="activities-list.html" class="icon-btn" aria-label="Kelola activity">&#9776;</a>
-      <button class="icon-btn" id="calendarBtn" aria-label="Pilih tanggal">&#128197;</button>
+      <a href="activities-list.html" class="icon-btn" aria-label="Kelola activity"><i class="ti ti-list"></i></a>
+      <button class="icon-btn" id="calendarBtn" aria-label="Pilih tanggal"><i class="ti ti-calendar"></i></button>
     </div>
   </div>
 
@@ -43,7 +44,7 @@
   <div id="listContainer"></div>
 </div>
 
-<a href="add-activity.html" class="fab" aria-label="Tambah activity">+</a>
+<a href="add-activity.html" class="fab" aria-label="Tambah activity"><i class="ti ti-plus"></i></a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-client.js"></script>
@@ -119,7 +120,7 @@
       const row = document.createElement('div');
       row.className = 'checklist-item' + (isDone ? ' done' : '');
       row.innerHTML = `
-        <div class="check-circle ${isDone ? 'checked' : ''}">${isDone ? '&#10003;' : ''}</div>
+        <div class="check-circle ${isDone ? 'checked' : ''}">${isDone ? '<i class="ti ti-check"></i>' : ''}</div>
         <div>
           <p class="ci-title">${escapeHtml(activity.subject)}</p>
           <p class="ci-time">${activity.activity_time.slice(0,5)}</p>
