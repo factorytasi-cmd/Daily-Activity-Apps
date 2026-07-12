@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUSS — Profil</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">Memuat...</div>
+
+<div class="screen" id="screen" style="display:none;">
+  <div class="top-bar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="home.html" class="icon-btn"><i class="ti ti-arrow-left"></i></a>
+      <span class="top-bar-title">Profil</span>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+    <div style="position:relative; flex-shrink:0;">
+      <div id="avatarBox" style="width:58px; height:58px; border-radius:50%; background:var(--peach); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600; color:var(--bg); overflow:hidden;">?</div>
+      <button id="avatarEditBtn" style="position:absolute; bottom:-2px; right:-2px; width:24px; height:24px; border-radius:50%; background:var(--card-alt); border:2px solid var(--bg); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--peach-light); font-size:11px;">
+        <i class="ti ti-camera"></i>
+      </button>
+      <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+    </div>
+    <div style="flex:1; min-width:0;">
+      <p style="margin:0; font-size:16px; font-weight:600;" id="profileName">-</p>
+      <p style="margin:2px 0 0; font-size:12.5px; color:var(--text-secondary);" id="profileMeta">-</p>
+    </div>
+  </div>
+  <p class="error-text" id="avatarError"></p>
+
+  <div style="display:flex; gap:10px; margin-bottom:22px;">
+    <div style="flex:1; background:var(--card); border-radius:14px; padding:12px; text-align:center;">
+      <p style="margin:0; font-size:17px; font-weight:600;" id="statStreak">0</p>
+      <p style="margin:1px 0 0; font-size:10.5px; color:var(--text-secondary);">Hari streak</p>
+    </div>
+    <div style="flex:1; background:var(--card); border-radius:14px; padding:12px; text-align:center;">
+      <p style="margin:0; font-size:17px; font-weight:600;" id="statTotal">0</p>
+      <p style="margin:1px 0 0; font-size:10.5px; color:var(--text-secondary);">Total activity</p>
+    </div>
+    <div style="flex:1; background:var(--card); border-radius:14px; padding:12px; text-align:center;">
+      <p style="margin:0; font-size:17px; font-weight:600;" id="statAvg">0%</p>
+      <p style="margin:1px 0 0; font-size:10.5px; color:var(--text-secondary);">Minggu ini</p>
+    </div>
+  </div>
+
+  <p class="field-label">Akun</p>
+  <div id="rowFullName" class="manage-row" style="cursor:pointer;"></div>
+  <div id="rowPassword" class="manage-row" style="cursor:pointer;"></div>
+  <div id="rowMotto" class="manage-row" style="cursor:pointer; margin-bottom:18px;"></div>
+
+  <p class="field-label">Preferensi</p>
+  <div class="manage-row">
+    <i class="ti ti-bell" style="font-size:18px; color:var(--peach-light); margin-right:4px;"></i>
+    <p class="mr-title" style="flex:1;">Notifikasi push</p>
+    <div id="notifToggle" style="width:38px; height:22px; border-radius:11px; background:var(--card-alt); position:relative; cursor:pointer; flex-shrink:0;">
+      <div id="notifToggleDot" style="width:18px; height:18px; border-radius:50%; background:var(--text-faint); position:absolute; top:2px; left:2px; transition:left 0.15s;"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:26px;">
+    <button class="btn-outline-danger" id="logoutBtn"><i class="ti ti-logout"></i> Keluar</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script src="activity-utils.js"></script>
+<script src="push-notifications.js"></script>
+<script>
+  let currentUser = null;
+  let currentProfile = null;
+
+  (async function init(){
+    const auth = await requireAuth();
+    if (!auth) return;
+    currentUser = auth.session.user;
+    currentProfile = auth.profile;
+
+    renderProfileHeader();
+    renderAccountRows();
+    await renderStats();
+    await refreshNotifToggle();
+
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('screen').style.display = 'block';
+  })();
+
+  function renderProfileHeader(){
+    const name = currentProfile.full_name || currentProfile.username || 'User';
+    document.getElementById('profileName').textContent = name;
+
+    const joined = new Date(currentProfile.created_at);
+    const bulanSingkat = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    document.getElementById('profileMeta').textContent = `@${currentProfile.username} \u00b7 Bergabung ${bulanSingkat[joined.getMonth()]} ${joined.getFullYear()}`;
+
+    const avatarBox = document.getElementById('avatarBox');
+    if (currentProfile.avatar_url) {
+      avatarBox.innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%; height:100%; object-fit:cover;">`;
+    } else {
+      avatarBox.textContent = name.charAt(0).toUpperCase();
+    }
+  }
+
+  // ---- Avatar upload ----
+  document.getElementById('avatarEditBtn').addEventListener('click', () => {
+    document.getElementById('avatarInput').click();
+  });
+
+  document.getElementById('avatarInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const errorEl = document.getElementById('avatarError');
+    errorEl.textContent = '';
+
+    if (file.size > 3 * 1024 * 1024) {
+      errorEl.textContent = 'Ukuran foto maksimal 3MB.';
+      return;
+    }
+
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${currentUser.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabaseClient.storage.from('avatars').getPublicUrl(path);
+      const versionedUrl = `${data.publicUrl}?v=${Date.now()}`;
+
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({ avatar_url: versionedUrl })
+        .eq('id', currentUser.id);
+      if (updateError) throw updateError;
+
+      currentProfile.avatar_url = versionedUrl;
+      renderProfileHeader();
+    } catch (err) {
+      errorEl.textContent = 'Gagal upload foto: ' + err.message;
+    }
+  });
+
+  // ---- Akun rows (info pribadi, password, motto) ----
+  function renderAccountRows(){
+    renderViewRow('rowFullName', 'ti-user', 'Nama lengkap', currentProfile.full_name || '-', () => renderEditNameForm());
+    renderViewRow('rowPassword', 'ti-lock', 'Ubah password', 'Tap untuk ubah', () => renderPasswordForm());
+    renderViewRow('rowMotto', 'ti-message-2', 'Motto harian', currentProfile.motto || '-', () => renderMottoForm());
+  }
+
+  function renderViewRow(id, icon, title, sub, onClick){
+    const row = document.getElementById(id);
+    row.innerHTML = `
+      <i class="ti ${icon}" style="font-size:18px; color:var(--peach-light); margin-right:4px;"></i>
+      <div style="flex:1; min-width:0;">
+        <p class="mr-title">${escapeHtml(title)}</p>
+        <p class="mr-sub" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(sub)}</p>
+      </div>
+      <i class="ti ti-chevron-right" style="color:var(--text-faint);"></i>
+    `;
+    row.onclick = onClick;
+  }
+
+  function renderEditNameForm(){
+    const row = document.getElementById('rowFullName');
+    row.onclick = null;
+    row.innerHTML = `
+      <div style="flex:1;">
+        <input type="text" class="field-input" id="editNameInput" value="${escapeHtml(currentProfile.full_name || '')}" style="margin-bottom:8px; padding:8px 10px;">
+        <p class="error-text" id="editNameError" style="margin:0;"></p>
+      </div>
+      <div style="display:flex; gap:6px; margin-left:8px;">
+        <button class="mr-delete" id="saveNameBtn" style="color:var(--peach-light);"><i class="ti ti-check"></i></button>
+        <button class="mr-delete" id="cancelNameBtn"><i class="ti ti-x"></i></button>
+      </div>
+    `;
+    document.getElementById('cancelNameBtn').addEventListener('click', renderAccountRows);
+    document.getElementById('saveNameBtn').addEventListener('click', async () => {
+      const newName = document.getElementById('editNameInput').value.trim();
+      const errorEl = document.getElementById('editNameError');
+      if (!newName) { errorEl.textContent = 'Nama tidak boleh kosong.'; return; }
+
+      const { error } = await supabaseClient.from('profiles').update({ full_name: newName }).eq('id', currentUser.id);
+      if (error) { errorEl.textContent = error.message; return; }
+
+      currentProfile.full_name = newName;
+      renderProfileHeader();
+      renderAccountRows();
+    });
+  }
+
+  function renderPasswordForm(){
+    const row = document.getElementById('rowPassword');
+    row.onclick = null;
+    row.innerHTML = `
+      <div style="flex:1;">
+        <input type="password" class="field-input" id="newPasswordInput" placeholder="Password baru (min. 6 karakter)" style="margin-bottom:8px; padding:8px 10px;">
+        <p class="error-text" id="passwordError" style="margin:0;"></p>
+      </div>
+      <div style="display:flex; gap:6px; margin-left:8px;">
+        <button class="mr-delete" id="savePasswordBtn" style="color:var(--peach-light);"><i class="ti ti-check"></i></button>
+        <button class="mr-delete" id="cancelPasswordBtn"><i class="ti ti-x"></i></button>
+      </div>
+    `;
+    document.getElementById('cancelPasswordBtn').addEventListener('click', renderAccountRows);
+    document.getElementById('savePasswordBtn').addEventListener('click', async () => {
+      const newPassword = document.getElementById('newPasswordInput').value;
+      const errorEl = document.getElementById('passwordError');
+      if (!newPassword || newPassword.length < 6) { errorEl.textContent = 'Password minimal 6 karakter.'; return; }
+
+      const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+      if (error) { errorEl.textContent = error.message; return; }
+
+      renderAccountRows();
+      alert('Password berhasil diubah.');
+    });
+  }
+
+  function renderMottoForm(){
+    const row = document.getElementById('rowMotto');
+    row.onclick = null;
+    row.innerHTML = `
+      <div style="flex:1;">
+        <input type="text" class="field-input" id="editMottoInput" value="${escapeHtml(currentProfile.motto || '')}" style="margin-bottom:8px; padding:8px 10px;">
+        <p class="error-text" id="editMottoError" style="margin:0;"></p>
+      </div>
+      <div style="display:flex; gap:6px; margin-left:8px;">
+        <button class="mr-delete" id="saveMottoBtn" style="color:var(--peach-light);"><i class="ti ti-check"></i></button>
+        <button class="mr-delete" id="cancelMottoBtn"><i class="ti ti-x"></i></button>
+      </div>
+    `;
+    document.getElementById('cancelMottoBtn').addEventListener('click', renderAccountRows);
+    document.getElementById('saveMottoBtn').addEventListener('click', async () => {
+      const newMotto = document.getElementById('editMottoInput').value.trim();
+      const { error } = await supabaseClient.from('profiles').update({ motto: newMotto }).eq('id', currentUser.id);
+      if (error) { document.getElementById('editMottoError').textContent = error.message; return; }
+
+      currentProfile.motto = newMotto;
+      renderAccountRows();
+    });
+  }
+
+  // ---- Stats ----
+  async function renderStats(){
+    const today = new Date(); today.setHours(0,0,0,0);
+    const windowStart = new Date(today); windowStart.setDate(windowStart.getDate() - 59);
+
+    const { data: activities } = await supabaseClient
+      .from('activities').select('*').eq('user_id', currentUser.id).eq('is_active', true);
+
+    const { data: logs } = await supabaseClient
+      .from('checklist_logs').select('activity_id, log_date, is_done')
+      .eq('user_id', currentUser.id).gte('log_date', formatDateKey(windowStart));
+
+    const acts = activities || [];
+    const logsMap = buildLogsMap(logs);
+
+    document.getElementById('statTotal').textContent = acts.length;
+    document.getElementById('statStreak').textContent = computeStreak(acts, logsMap, today);
+    const week = computeWeekProgress(acts, logsMap, today);
+    document.getElementById('statAvg').textContent = `${week.percent}%`;
+  }
+
+  // ---- Notifikasi toggle ----
+  async function refreshNotifToggle(){
+    const enabled = await isPushEnabled();
+    setToggleUI(enabled);
+  }
+
+  function setToggleUI(enabled){
+    const dot = document.getElementById('notifToggleDot');
+    const toggle = document.getElementById('notifToggle');
+    toggle.style.background = enabled ? 'var(--peach)' : 'var(--card-alt)';
+    dot.style.left = enabled ? '18px' : '2px';
+    dot.style.background = enabled ? 'var(--bg)' : 'var(--text-faint)';
+  }
+
+  document.getElementById('notifToggle').addEventListener('click', async () => {
+    const enabled = await isPushEnabled();
+    if (enabled) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = registration ? await registration.pushManager.getSubscription() : null;
+      if (subscription) {
+        await supabaseClient.from('push_subscriptions').delete().eq('endpoint', subscription.endpoint);
+        await subscription.unsubscribe();
+      }
+      setToggleUI(false);
+    } else {
+      try {
+        await enablePushNotifications(currentUser.id);
+        setToggleUI(true);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await signOut();
+  });
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

@@ -53,7 +53,74 @@ function isActivityDueOnDate(activity, date){
   return false;
 }
 
-/** Teks ringkas jadwal, dipakai di halaman kelola activity. */
+/** Ubah array checklist_logs jadi map cepat: "activityId|YYYY-MM-DD" -> is_done */
+function buildLogsMap(logs){
+  const map = {};
+  (logs || []).forEach(l => { map[`${l.activity_id}|${l.log_date}`] = l.is_done; });
+  return map;
+}
+
+/** Hitung streak (hari berturut-turut semua activity due-nya selesai). Hari ini tidak memutus streak kalau belum selesai. */
+function computeStreak(activities, logsMap, today){
+  let streak = 0;
+  const cursor = new Date(today); cursor.setHours(0,0,0,0);
+  const todayKey = formatDateKey(today);
+
+  for (let i = 0; i < 60; i++){
+    const due = activities.filter(a => isActivityDueOnDate(a, cursor));
+    const key = formatDateKey(cursor);
+
+    if (due.length === 0){
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+
+    const allDone = due.every(a => logsMap[`${a.id}|${key}`] === true);
+
+    if (allDone){
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else if (key === todayKey){
+      cursor.setDate(cursor.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+/** Progres 7 hari terakhir (termasuk hari ini), buat grafik & persentase minggu ini. */
+function computeWeekProgress(activities, logsMap, today){
+  const days = [];
+  for (let i = 6; i >= 0; i--){
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const due = activities.filter(a => isActivityDueOnDate(a, d));
+    const doneCount = due.filter(a => logsMap[`${a.id}|${formatDateKey(d)}`] === true).length;
+    days.push({ label: NAMA_HARI[isoWeekday(d)-1].slice(0,2), dueCount: due.length, doneCount, isToday: isToday(d) });
+  }
+  const totalDue = days.reduce((s,d) => s + d.dueCount, 0);
+  const totalDone = days.reduce((s,d) => s + d.doneCount, 0);
+  const percent = totalDue > 0 ? Math.round((totalDone/totalDue)*100) : 0;
+  return { days, percent };
+}
+
+/** Ranking tiap activity berdasar persentase selesai dalam N hari terakhir. */
+function computeActivityRanking(activities, logsMap, today, windowDays){
+  const results = activities.map(a => {
+    let due = 0, done = 0;
+    for (let i = 0; i < windowDays; i++){
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      if (isActivityDueOnDate(a, d)){
+        due++;
+        if (logsMap[`${a.id}|${formatDateKey(d)}`] === true) done++;
+      }
+    }
+    return { activity: a, due, done, percent: due > 0 ? Math.round((done/due)*100) : 0 };
+  }).filter(r => r.due > 0);
+
+  results.sort((x,y) => y.percent - x.percent);
+  return results;
+}
 function ringkasJadwal(activity){
   if (activity.recurrence_type === 'daily') return 'Setiap hari';
   if (activity.recurrence_type === 'weekly') {

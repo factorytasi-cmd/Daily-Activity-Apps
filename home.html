@@ -19,7 +19,7 @@
       </div>
       <span style="font-size:19px; font-weight:600; letter-spacing:0.5px;">LUSS</span>
     </div>
-    <div style="width:34px; height:34px; border-radius:50%; background:var(--card-alt); display:flex; align-items:center; justify-content:center; font-size:15px;" id="avatarInitial">?</div>
+    <a href="profile.html" style="width:34px; height:34px; border-radius:50%; background:var(--card-alt); display:flex; align-items:center; justify-content:center; font-size:15px; text-decoration:none; color:var(--text); overflow:hidden;" id="avatarInitial">?</a>
   </div>
 
   <div style="margin-bottom:26px;">
@@ -47,7 +47,7 @@
     </div>
   </a>
 
-  <a href="coming-soon.html?fitur=Dashboard" class="menu-card">
+  <a href="dashboard.html" class="menu-card">
     <div class="menu-icon" style="background:#F5A889;">
       <i class="ti ti-chart-bar" style="color:var(--bg);"></i>
     </div>
@@ -74,7 +74,12 @@
     const { profile } = auth;
     const name = profile.full_name || profile.username || 'kamu';
     document.getElementById('greeting').textContent = `Level up harimu, ${name.split(' ')[0]}. \u2728`;
-    document.getElementById('avatarInitial').textContent = name.charAt(0).toUpperCase();
+    const avatarEl = document.getElementById('avatarInitial');
+    if (profile.avatar_url) {
+      avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%; height:100%; object-fit:cover;">`;
+    } else {
+      avatarEl.textContent = name.charAt(0).toUpperCase();
+    }
 
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('screen').style.display = 'block';
