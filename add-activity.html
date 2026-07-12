@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUSS — Tambah Activity</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">Memuat...</div>
+
+<div class="screen" id="screen" style="display:none;">
+  <div class="top-bar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="daily-activity.html" class="icon-btn">&#8592;</a>
+      <span class="top-bar-title">Tambah activity</span>
+    </div>
+  </div>
+
+  <form id="activityForm">
+    <p class="field-label">Subject activity</p>
+    <input class="field-input" type="text" id="subject" placeholder="Contoh: Olahraga pagi" required>
+
+    <p class="field-label">Jam activity</p>
+    <input class="field-input" type="time" id="activityTime" required>
+
+    <p class="field-label">Pengulangan</p>
+    <div class="segmented">
+      <button type="button" class="active" data-value="daily">Daily</button>
+      <button type="button" data-value="weekly">Weekly</button>
+      <button type="button" data-value="monthly">Monthly</button>
+    </div>
+
+    <!-- WEEKLY -->
+    <div id="weeklyBlock" style="display:none;">
+      <p class="field-label">Pilih hari</p>
+      <div class="day-chip-row" id="dayChipRow">
+        <div class="day-chip" data-day="1">Sn</div>
+        <div class="day-chip" data-day="2">Sl</div>
+        <div class="day-chip" data-day="3">Rb</div>
+        <div class="day-chip" data-day="4">Km</div>
+        <div class="day-chip" data-day="5">Jm</div>
+        <div class="day-chip" data-day="6">Sb</div>
+        <div class="day-chip" data-day="7">Mg</div>
+      </div>
+    </div>
+
+    <!-- MONTHLY -->
+    <div id="monthlyBlock" style="display:none;">
+      <p class="field-label">Mode</p>
+      <div class="segmented">
+        <button type="button" class="active" data-mmode="fixed_date">Tanggal tetap</button>
+        <button type="button" data-mmode="pattern">Pola minggu</button>
+      </div>
+
+      <div id="fixedDateBlock">
+        <p class="field-label">Tanggal (1-31)</p>
+        <input class="field-input" type="number" id="monthlyDate" min="1" max="31" placeholder="Contoh: 15">
+      </div>
+
+      <div id="patternBlock" style="display:none;">
+        <p class="field-label">Hari</p>
+        <div class="day-chip-row" id="patternDayRow">
+          <div class="day-chip" data-day="1">Sn</div>
+          <div class="day-chip" data-day="2">Sl</div>
+          <div class="day-chip" data-day="3">Rb</div>
+          <div class="day-chip" data-day="4">Km</div>
+          <div class="day-chip" data-day="5">Jm</div>
+          <div class="day-chip" data-day="6">Sb</div>
+          <div class="day-chip" data-day="7">Mg</div>
+        </div>
+        <p class="field-label">Minggu ke-</p>
+        <div class="day-chip-row" id="occurrenceRow">
+          <div class="day-chip" data-occ="1" style="width:auto; border-radius:10px; padding:0 12px;">1</div>
+          <div class="day-chip" data-occ="2" style="width:auto; border-radius:10px; padding:0 12px;">2</div>
+          <div class="day-chip" data-occ="3" style="width:auto; border-radius:10px; padding:0 12px;">3</div>
+          <div class="day-chip" data-occ="4" style="width:auto; border-radius:10px; padding:0 12px;">4</div>
+          <div class="day-chip" data-occ="5" style="width:auto; border-radius:10px; padding:0 12px;">5</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="error-text" id="formError"></p>
+
+    <button class="btn-primary" type="submit" id="submitBtn">Simpan activity</button>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script>
+  let currentUser = null;
+  let recurrenceType = 'daily';
+  let monthlyMode = 'fixed_date';
+  let selectedWeeklyDays = [];
+  let selectedPatternDay = null;
+  let selectedOccurrence = null;
+
+  (async function init(){
+    const auth = await requireAuth();
+    if (!auth) return;
+    currentUser = auth.session.user;
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('screen').style.display = 'block';
+  })();
+
+  // Segmented: recurrence type
+  document.querySelectorAll('.segmented')[0].querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.segmented')[0].querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      recurrenceType = btn.dataset.value;
+      document.getElementById('weeklyBlock').style.display = recurrenceType === 'weekly' ? 'block' : 'none';
+      document.getElementById('monthlyBlock').style.display = recurrenceType === 'monthly' ? 'block' : 'none';
+    });
+  });
+
+  // Weekly day chips
+  document.getElementById('dayChipRow').querySelectorAll('.day-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const day = Number(chip.dataset.day);
+      chip.classList.toggle('selected');
+      if (selectedWeeklyDays.includes(day)) {
+        selectedWeeklyDays = selectedWeeklyDays.filter(d => d !== day);
+      } else {
+        selectedWeeklyDays.push(day);
+      }
+    });
+  });
+
+  // Monthly mode segmented
+  document.querySelectorAll('.segmented')[1].querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.segmented')[1].querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      monthlyMode = btn.dataset.mmode;
+      document.getElementById('fixedDateBlock').style.display = monthlyMode === 'fixed_date' ? 'block' : 'none';
+      document.getElementById('patternBlock').style.display = monthlyMode === 'pattern' ? 'block' : 'none';
+    });
+  });
+
+  // Pattern day chips (single select)
+  document.getElementById('patternDayRow').querySelectorAll('.day-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.getElementById('patternDayRow').querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedPatternDay = Number(chip.dataset.day);
+    });
+  });
+
+  // Occurrence chips (single select)
+  document.getElementById('occurrenceRow').querySelectorAll('.day-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.getElementById('occurrenceRow').querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedOccurrence = Number(chip.dataset.occ);
+    });
+  });
+
+  document.getElementById('activityForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('formError');
+    const submitBtn = document.getElementById('submitBtn');
+    errorEl.textContent = '';
+
+    const subject = document.getElementById('subject').value.trim();
+    const activityTime = document.getElementById('activityTime').value;
+
+    const payload = {
+      user_id: currentUser.id,
+      subject,
+      activity_time: activityTime,
+      recurrence_type: recurrenceType,
+      weekly_days: null,
+      monthly_mode: null,
+      monthly_date: null,
+      monthly_pattern_weekday: null,
+      monthly_pattern_occurrence: null
+    };
+
+    if (recurrenceType === 'weekly') {
+      if (selectedWeeklyDays.length === 0) {
+        errorEl.textContent = 'Pilih minimal satu hari untuk activity weekly.';
+        return;
+      }
+      payload.weekly_days = selectedWeeklyDays;
+    }
+
+    if (recurrenceType === 'monthly') {
+      payload.monthly_mode = monthlyMode;
+      if (monthlyMode === 'fixed_date') {
+        const dateVal = Number(document.getElementById('monthlyDate').value);
+        if (!dateVal || dateVal < 1 || dateVal > 31) {
+          errorEl.textContent = 'Isi tanggal yang valid (1-31).';
+          return;
+        }
+        payload.monthly_date = dateVal;
+      } else {
+        if (!selectedPatternDay || !selectedOccurrence) {
+          errorEl.textContent = 'Pilih hari dan minggu ke berapa.';
+          return;
+        }
+        payload.monthly_pattern_weekday = selectedPatternDay;
+        payload.monthly_pattern_occurrence = selectedOccurrence;
+      }
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menyimpan...';
+
+    const { error } = await supabaseClient.from('activities').insert(payload);
+
+    if (error) {
+      errorEl.textContent = error.message;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Simpan activity';
+      return;
+    }
+
+    window.location.href = 'daily-activity.html';
+  });
+</script>
+</body>
+</html>

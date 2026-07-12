@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUSS — Daily Activity</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">Memuat...</div>
+
+<div class="screen" id="screen" style="display:none; padding-bottom:110px;">
+  <div class="top-bar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="home.html" class="icon-btn">&#8592;</a>
+      <span class="top-bar-title">Daily activity</span>
+    </div>
+    <div class="top-bar-actions">
+      <a href="activities-list.html" class="icon-btn" aria-label="Kelola activity">&#9776;</a>
+      <button class="icon-btn" id="calendarBtn" aria-label="Pilih tanggal">&#128197;</button>
+    </div>
+  </div>
+
+  <input type="date" id="datePicker" style="position:absolute; opacity:0; pointer-events:none; width:1px; height:1px;">
+
+  <div class="date-nav">
+    <button class="arrow" id="prevBtn">&#8249;</button>
+    <div class="date-block">
+      <div class="date-main" id="dateMain">-</div>
+      <div class="date-sub" id="dateSub"></div>
+    </div>
+    <button class="arrow" id="nextBtn">&#8250;</button>
+  </div>
+
+  <div class="motto-box" id="mottoBox"></div>
+
+  <div class="progress-mini" id="progressRow" style="display:none;">
+    <div class="bar"><div class="fill" id="progressFill"></div></div>
+    <span class="label" id="progressLabel">0/0 selesai</span>
+  </div>
+
+  <div id="listContainer"></div>
+</div>
+
+<a href="add-activity.html" class="fab" aria-label="Tambah activity">+</a>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script src="activity-utils.js"></script>
+<script>
+  let currentUser = null;
+  let currentDate = new Date();
+  currentDate.setHours(0,0,0,0);
+  let allActivities = [];
+
+  (async function init(){
+    const auth = await requireAuth();
+    if (!auth) return;
+    currentUser = auth.session.user;
+
+    document.getElementById('mottoBox').textContent = auth.profile.motto
+      ? `"${auth.profile.motto}"`
+      : 'Kecil tapi konsisten, itu yang menang.';
+
+    const { data, error } = await supabaseClient
+      .from('activities')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .eq('is_active', true);
+
+    if (!error) allActivities = data;
+
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('screen').style.display = 'block';
+
+    await renderChecklist();
+  })();
+
+  async function renderChecklist(){
+    document.getElementById('dateMain').textContent = formatDisplayDate(currentDate);
+    document.getElementById('dateSub').textContent = isToday(currentDate) ? 'Hari ini' : '';
+
+    const dueToday = allActivities
+      .filter(a => isActivityDueOnDate(a, currentDate))
+      .sort((a,b) => a.activity_time.localeCompare(b.activity_time));
+
+    const listContainer = document.getElementById('listContainer');
+    const progressRow = document.getElementById('progressRow');
+
+    if (dueToday.length === 0) {
+      progressRow.style.display = 'none';
+      listContainer.innerHTML = `<div class="empty-note">Tidak ada activity di tanggal ini.<br>Tekan tombol + untuk menambah.</div>`;
+      return;
+    }
+
+    const dateKey = formatDateKey(currentDate);
+    const activityIds = dueToday.map(a => a.id);
+
+    const { data: logs } = await supabaseClient
+      .from('checklist_logs')
+      .select('activity_id, is_done')
+      .eq('user_id', currentUser.id)
+      .eq('log_date', dateKey)
+      .in('activity_id', activityIds);
+
+    const doneMap = {};
+    (logs || []).forEach(l => { doneMap[l.activity_id] = l.is_done; });
+
+    const doneCount = dueToday.filter(a => doneMap[a.id]).length;
+    progressRow.style.display = 'flex';
+    document.getElementById('progressFill').style.width = `${(doneCount / dueToday.length) * 100}%`;
+    document.getElementById('progressLabel').textContent = `${doneCount}/${dueToday.length} selesai`;
+
+    listContainer.innerHTML = '';
+    dueToday.forEach(activity => {
+      const isDone = !!doneMap[activity.id];
+
+      const row = document.createElement('div');
+      row.className = 'checklist-item' + (isDone ? ' done' : '');
+      row.innerHTML = `
+        <div class="check-circle ${isDone ? 'checked' : ''}">${isDone ? '&#10003;' : ''}</div>
+        <div>
+          <p class="ci-title">${escapeHtml(activity.subject)}</p>
+          <p class="ci-time">${activity.activity_time.slice(0,5)}</p>
+        </div>
+      `;
+      row.addEventListener('click', () => toggleDone(activity.id, dateKey, !isDone));
+      listContainer.appendChild(row);
+    });
+  }
+
+  async function toggleDone(activityId, dateKey, newValue){
+    await supabaseClient.from('checklist_logs').upsert({
+      user_id: currentUser.id,
+      activity_id: activityId,
+      log_date: dateKey,
+      is_done: newValue,
+      completed_at: newValue ? new Date().toISOString() : null
+    }, { onConflict: 'activity_id,log_date' });
+
+    renderChecklist();
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    renderChecklist();
+  });
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    currentDate.setDate(currentDate.getDate() + 1);
+    renderChecklist();
+  });
+
+  const datePicker = document.getElementById('datePicker');
+  document.getElementById('calendarBtn').addEventListener('click', () => {
+    datePicker.value = formatDateKey(currentDate);
+    datePicker.style.pointerEvents = 'auto';
+    datePicker.showPicker ? datePicker.showPicker() : datePicker.click();
+  });
+  datePicker.addEventListener('change', () => {
+    if (datePicker.value) {
+      const [y,m,d] = datePicker.value.split('-').map(Number);
+      currentDate = new Date(y, m-1, d);
+      renderChecklist();
+    }
+  });
+</script>
+</body>
+</html>

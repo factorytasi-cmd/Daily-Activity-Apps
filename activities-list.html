@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUSS — Kelola Activity</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">Memuat...</div>
+
+<div class="screen" id="screen" style="display:none;">
+  <div class="top-bar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="daily-activity.html" class="icon-btn">&#8592;</a>
+      <span class="top-bar-title">Kelola activity</span>
+    </div>
+  </div>
+
+  <div id="listContainer"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script src="activity-utils.js"></script>
+<script>
+  let currentUser = null;
+
+  (async function init(){
+    const auth = await requireAuth();
+    if (!auth) return;
+    currentUser = auth.session.user;
+
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('screen').style.display = 'block';
+
+    await loadActivities();
+  })();
+
+  async function loadActivities(){
+    const { data, error } = await supabaseClient
+      .from('activities')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .eq('is_active', true)
+      .order('activity_time');
+
+    const container = document.getElementById('listContainer');
+
+    if (error || !data || data.length === 0) {
+      container.innerHTML = `<div class="empty-note">Belum ada activity yang dibuat.</div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    data.forEach(activity => {
+      const row = document.createElement('div');
+      row.className = 'manage-row';
+      row.innerHTML = `
+        <div>
+          <p class="mr-title">${escapeHtml(activity.subject)}</p>
+          <p class="mr-sub">${ringkasJadwal(activity)} &middot; ${activity.activity_time.slice(0,5)}</p>
+        </div>
+        <button class="mr-delete" aria-label="Hapus">&#10005;</button>
+      `;
+      row.querySelector('.mr-delete').addEventListener('click', () => hapusActivity(activity.id, activity.subject));
+      container.appendChild(row);
+    });
+  }
+
+  async function hapusActivity(id, subject){
+    if (!confirm(`Hapus activity "${subject}"? Riwayat checklist-nya juga akan terhapus.`)) return;
+    await supabaseClient.from('activities').delete().eq('id', id);
+    loadActivities();
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
