@@ -1,45 +1,27 @@
 // =========================================================
 // LUSS — Koneksi ke Supabase
-// File ini menghubungkan aplikasi ke database & auth Supabase.
 // =========================================================
 
-// Ganti dua nilai ini kalau suatu saat pindah project Supabase
 const SUPABASE_URL = 'https://bxskofuhepzyvvyyifmo.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_GhisykcOaK2inqR98SKiiA_OPwkgORH';
 
-// Membuat koneksi (client) ke Supabase.
-// Membutuhkan library supabase-js yang dimuat lebih dulu lewat CDN,
-// lihat contoh tag <script> di bagian bawah file ini.
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 
-// ---------------------------------------------------------
-// FUNGSI AUTH — daftar, masuk (login menerima username ATAU email), keluar
-// ---------------------------------------------------------
-
-/**
- * Daftar akun baru.
- * @param {string} email
- * @param {string} password
- * @param {string} username
- */
-async function signUp(email, password, username) {
+/** Daftar akun baru. */
+async function signUp(email, password, fullName) {
   const { data, error } = await supabaseClient.auth.signUp({
     email,
     password,
     options: {
-      data: { username } // disimpan sementara, nanti disinkronkan ke tabel profiles
+      data: { full_name: fullName }
     }
   });
   if (error) throw error;
   return data;
 }
 
-/**
- * Login pakai email.
- * @param {string} email
- * @param {string} password
- */
+/** Login pakai email. */
 async function signIn(email, password) {
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -50,20 +32,55 @@ async function signIn(email, password) {
 async function signOut() {
   const { error } = await supabaseClient.auth.signOut();
   if (error) throw error;
+  window.location.href = 'index.html';
 }
 
-/** Mendapatkan data user yang sedang login (null kalau belum login). */
-async function getCurrentUser() {
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  return user;
+/** Ambil session yang sedang aktif (null kalau belum login). */
+async function getSession() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  return session;
+}
+
+/** Ambil baris profil dari tabel profiles berdasarkan user id. */
+async function getProfile(userId) {
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Dipanggil di halaman yang WAJIB login (home, dashboard, dll).
+ * Kalau belum login, langsung dilempar ke halaman login.
+ * Kalau sudah, mengembalikan { session, profile }.
+ */
+async function requireAuth() {
+  const session = await getSession();
+  if (!session) {
+    window.location.href = 'index.html';
+    return null;
+  }
+  const profile = await getProfile(session.user.id);
+  return { session, profile };
+}
+
+/**
+ * Dipanggil di halaman login/signup.
+ * Kalau ternyata sudah login, langsung dilempar ke home.
+ */
+async function redirectIfLoggedIn() {
+  const session = await getSession();
+  if (session) {
+    window.location.href = 'home.html';
+  }
 }
 
 // =========================================================
-// CARA PAKAI DI index.html:
-//
+// CARA PAKAI DI setiap HTML:
 // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 // <script src="supabase-client.js"></script>
-//
-// Urutan ini penting: library supabase-js harus dimuat SEBELUM
-// file supabase-client.js ini.
+// (library supabase-js harus dimuat SEBELUM file ini)
 // =========================================================

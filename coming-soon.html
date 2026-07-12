@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUSS — Segera hadir</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">Memuat...</div>
+
+<div class="screen" id="screen" style="display:none; text-align:center; padding-top:100px;">
+  <div style="font-size:40px; margin-bottom:16px;">&#128736;</div>
+  <p style="font-size:18px; font-weight:600; margin:0 0 8px;" id="featureTitle">Fitur ini</p>
+  <p style="font-size:13.5px; color:var(--text-secondary); margin:0 0 28px;">Sedang dibangun, akan segera hadir.</p>
+  <a href="home.html" style="color:var(--peach-light); font-size:13.5px; text-decoration:none;">&#8592; Kembali ke home</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script>
+  (async function init(){
+    const auth = await requireAuth();
+    if (!auth) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const fitur = params.get('fitur') || 'Fitur ini';
+    document.getElementById('featureTitle').textContent = fitur;
+
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('screen').style.display = 'block';
+  })();
+</script>
+</body>
+</html>

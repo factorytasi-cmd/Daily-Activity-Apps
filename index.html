@@ -3,544 +3,136 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agenda Harian</title>
-<style>
-  :root{
-    --paper: #EFEBDE;
-    --paper-line: #DCD4BC;
-    --ink: #2E2B24;
-    --ink-soft: #6B6656;
-    --ink-faint: #9C9683;
-    --moss: #5B6B4F;
-    --moss-light: #E4E9DC;
-    --rust: #B5502E;
-    --rust-light: #F5E2D8;
-    --card: #F8F5EC;
-    --shadow: rgba(46,43,36,0.08);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
-    min-height:100vh;
-    padding: 32px 16px 80px;
-    -webkit-font-smoothing:antialiased;
-  }
-  .wrap{
-    max-width:640px;
-    margin:0 auto;
-  }
-  .masthead{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    border-bottom: 2px solid var(--ink);
-    padding-bottom:14px;
-    margin-bottom:22px;
-  }
-  .masthead h1{
-    font-size:26px;
-    font-weight:400;
-    letter-spacing:0.5px;
-    margin:0;
-  }
-  .masthead .tagline{
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size:12px;
-    color:var(--ink-faint);
-    text-transform:uppercase;
-    letter-spacing:1.5px;
-  }
-  .nav{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-  .nav button.arrow{
-    background:none;
-    border:1px solid var(--ink-faint);
-    color:var(--ink);
-    width:34px;
-    height:34px;
-    border-radius:50%;
-    cursor:pointer;
-    font-size:16px;
-    line-height:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:background 0.15s;
-  }
-  .nav button.arrow:hover{background:var(--paper-line);}
-  .nav .date-block{
-    text-align:center;
-    flex:1;
-  }
-  .nav .date-main{
-    font-size:17px;
-    font-weight:600;
-  }
-  .nav .date-sub{
-    font-size:11px;
-    color:var(--ink-faint);
-    text-transform:uppercase;
-    letter-spacing:1px;
-    margin-top:2px;
-  }
-  .nav .today-btn{
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size:11px;
-    background:none;
-    border:1px solid var(--moss);
-    color:var(--moss);
-    border-radius:14px;
-    padding:4px 10px;
-    cursor:pointer;
-    letter-spacing:0.5px;
-  }
-  .today-btn:hover{background:var(--moss-light);}
-
-  .progress-row{
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:18px;
-    font-size:12px;
-    color:var(--ink-soft);
-  }
-  .progress-bar{
-    flex:1;
-    height:5px;
-    background:var(--paper-line);
-    border-radius:3px;
-    overflow:hidden;
-  }
-  .progress-fill{
-    height:100%;
-    background:var(--moss);
-    width:0%;
-    transition:width 0.3s ease;
-  }
-
-  .add-card{
-    background:var(--card);
-    border:1px solid var(--paper-line);
-    border-radius:10px;
-    padding:14px;
-    margin-bottom:24px;
-    box-shadow: 0 1px 2px var(--shadow);
-  }
-  .add-row{
-    display:flex;
-    gap:8px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-  .add-row input[type="text"]{
-    flex:1;
-    border:none;
-    border-bottom:1.5px solid var(--paper-line);
-    background:transparent;
-    padding:8px 2px;
-    font-size:14px;
-    font-family: inherit;
-    color:var(--ink);
-    outline:none;
-  }
-  .add-row input[type="text"]:focus{border-bottom-color:var(--moss);}
-  .add-row input[type="time"]{
-    border:none;
-    border-bottom:1.5px solid var(--paper-line);
-    background:transparent;
-    padding:8px 2px;
-    font-size:13px;
-    color:var(--ink-soft);
-    outline:none;
-    width:100px;
-    font-family: inherit;
-  }
-  .add-row input[type="time"]:focus{border-bottom-color:var(--moss);}
-  .add-row button{
-    background:var(--ink);
-    color:var(--paper);
-    border:none;
-    border-radius:6px;
-    padding:0 16px;
-    font-size:13px;
-    cursor:pointer;
-    letter-spacing:0.3px;
-  }
-  .add-row button:hover{background:var(--moss);}
-
-  .list{
-    position:relative;
-    padding-left:18px;
-  }
-  .list::before{
-    content:"";
-    position:absolute;
-    left:6px;
-    top:4px;
-    bottom:4px;
-    width:1px;
-    background:var(--paper-line);
-  }
-  .item{
-    position:relative;
-    display:flex;
-    align-items:flex-start;
-    gap:12px;
-    padding:12px 10px 12px 4px;
-    border-bottom:1px solid var(--paper-line);
-  }
-  .item:last-child{border-bottom:none;}
-  .checkbox{
-    flex-shrink:0;
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    border:1.5px solid var(--ink-faint);
-    background:var(--paper);
-    cursor:pointer;
-    margin-top:2px;
-    position:relative;
-    z-index:1;
-  }
-  .checkbox.checked{
-    background:var(--moss);
-    border-color:var(--moss);
-  }
-  .checkbox.checked::after{
-    content:"";
-    position:absolute;
-    left:6px;
-    top:2px;
-    width:5px;
-    height:9px;
-    border:solid var(--paper);
-    border-width:0 2px 2px 0;
-    transform:rotate(45deg);
-  }
-  .item-body{
-    flex:1;
-    min-width:0;
-  }
-  .item-time{
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size:11px;
-    color:var(--rust);
-    letter-spacing:0.5px;
-    margin-bottom:2px;
-  }
-  .item-title{
-    font-size:15.5px;
-    line-height:1.4;
-    word-break:break-word;
-  }
-  .item.done .item-title{
-    color:var(--ink-faint);
-    text-decoration: line-through;
-    text-decoration-color: var(--rust);
-    text-decoration-thickness: 1.5px;
-  }
-  .item.done .item-time{opacity:0.5;}
-  .item-title[contenteditable="true"]{
-    outline: 1px dashed var(--moss);
-    outline-offset:3px;
-    border-radius:3px;
-  }
-  .item-actions{
-    display:flex;
-    gap:6px;
-    flex-shrink:0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-  .item-actions button{
-    background:none;
-    border:none;
-    color:var(--ink-faint);
-    cursor:pointer;
-    font-size:13px;
-    padding:4px;
-    line-height:1;
-  }
-  .item-actions button:hover{color:var(--rust);}
-
-  .empty{
-    text-align:center;
-    padding:40px 20px;
-    color:var(--ink-faint);
-    font-size:14px;
-  }
-  .empty .big{
-    font-size:15px;
-    color:var(--ink-soft);
-    margin-bottom:4px;
-  }
-
-  .loading{
-    text-align:center;
-    padding:40px;
-    color:var(--ink-faint);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size:13px;
-  }
-
-  ::selection{background:var(--rust-light);}
-
-  @media (max-width:480px){
-    .masthead h1{font-size:22px;}
-    .add-row{flex-wrap:wrap;}
-    .add-row input[type="time"]{width:90px;}
-  }
-</style>
+<title>LUSS — Masuk</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="wrap">
-  <div class="masthead">
-    <h1>Agenda Harian</h1>
-    <div class="tagline">Buku catatan aktivitas</div>
+
+<div class="screen" id="screen">
+  <div class="brand">
+    <div class="brand-icon">&#9889;</div>
+    <div class="brand-name">LUSS</div>
+    <div class="brand-tagline">Level up &amp; stay strong</div>
   </div>
 
-  <div class="nav">
-    <button class="arrow" id="prevBtn" aria-label="Hari sebelumnya">&#8249;</button>
-    <div class="date-block">
-      <div class="date-main" id="dateMain">-</div>
-      <div class="date-sub" id="dateSub">-</div>
-      <button class="today-btn" id="todayBtn" style="margin-top:6px;">Hari ini</button>
-    </div>
-    <button class="arrow" id="nextBtn" aria-label="Hari berikutnya">&#8250;</button>
+  <div class="tab-switch">
+    <button id="tabLogin" class="active">Login</button>
+    <button id="tabSignup">Sign up</button>
   </div>
 
-  <div class="progress-row" id="progressRow" style="display:none;">
-    <span id="progressText">0/0 selesai</span>
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-  </div>
+  <!-- LOGIN FORM -->
+  <form id="loginForm">
+    <p class="field-label">Email</p>
+    <input class="field-input" type="email" id="loginEmail" placeholder="nama@email.com" required>
 
-  <div class="add-card">
-    <div class="add-row">
-      <input type="time" id="timeInput" value="">
-      <input type="text" id="titleInput" placeholder="Tulis aktivitas baru...">
-      <button id="addBtn">Tambah</button>
-    </div>
-  </div>
+    <p class="field-label">Password</p>
+    <input class="field-input" type="password" id="loginPassword" placeholder="Masukkan password" required>
 
-  <div id="listContainer">
-    <div class="loading">Memuat agenda...</div>
-  </div>
+    <p class="error-text" id="loginError"></p>
+
+    <button class="btn-primary" type="submit" id="loginSubmit">Masuk</button>
+  </form>
+
+  <!-- SIGNUP FORM -->
+  <form id="signupForm" style="display:none;">
+    <p class="field-label">Nama lengkap</p>
+    <input class="field-input" type="text" id="signupName" placeholder="Nama kamu" required>
+
+    <p class="field-label">Email</p>
+    <input class="field-input" type="email" id="signupEmail" placeholder="nama@email.com" required>
+
+    <p class="field-label">Password</p>
+    <input class="field-input" type="password" id="signupPassword" placeholder="Minimal 6 karakter" minlength="6" required>
+
+    <p class="error-text" id="signupError"></p>
+    <p class="info-text" id="signupInfo"></p>
+
+    <button class="btn-primary" type="submit" id="signupSubmit">Buat akun</button>
+  </form>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
 <script>
-(function(){
-  const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-  const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const tabLogin = document.getElementById('tabLogin');
+  const tabSignup = document.getElementById('tabSignup');
+  const loginForm = document.getElementById('loginForm');
+  const signupForm = document.getElementById('signupForm');
 
-  let currentDate = new Date();
-  currentDate.setHours(0,0,0,0);
-  let activities = [];
-
-  function fmtKey(d){
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,'0');
-    const day = String(d.getDate()).padStart(2,'0');
-    return `activities:${y}-${m}-${day}`;
-  }
-
-  function isToday(d){
-    const t = new Date(); t.setHours(0,0,0,0);
-    return d.getTime() === t.getTime();
-  }
-
-  function renderDateHeader(){
-    const dateMain = document.getElementById('dateMain');
-    const dateSub = document.getElementById('dateSub');
-    dateMain.textContent = `${days[currentDate.getDay()]}, ${currentDate.getDate()} ${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-    dateSub.textContent = isToday(currentDate) ? 'Hari ini' : '';
-    document.getElementById('todayBtn').style.visibility = isToday(currentDate) ? 'hidden' : 'visible';
-  }
-
-  function uid(){
-    return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-  }
-
-  async function loadActivities(){
-    document.getElementById('listContainer').innerHTML = '<div class="loading">Memuat agenda...</div>';
-    try{
-      const res = await window.storage.get(fmtKey(currentDate), false);
-      activities = res && res.value ? JSON.parse(res.value) : [];
-    }catch(e){
-      activities = [];
-    }
-    activities.sort((a,b)=>{
-      if(a.time && b.time) return a.time.localeCompare(b.time);
-      if(a.time && !b.time) return -1;
-      if(!a.time && b.time) return 1;
-      return a.createdAt - b.createdAt;
-    });
-    render();
-  }
-
-  async function saveActivities(){
-    try{
-      await window.storage.set(fmtKey(currentDate), JSON.stringify(activities), false);
-    }catch(e){
-      console.error('Gagal menyimpan', e);
-    }
-  }
-
-  function render(){
-    renderDateHeader();
-    const container = document.getElementById('listContainer');
-    const progressRow = document.getElementById('progressRow');
-
-    if(activities.length === 0){
-      progressRow.style.display = 'none';
-      container.innerHTML = `<div class="empty">
-        <div class="big">Belum ada aktivitas.</div>
-        <div>Tambahkan aktivitas pertama hari ini di atas.</div>
-      </div>`;
-      return;
-    }
-
-    const doneCount = activities.filter(a=>a.done).length;
-    progressRow.style.display = 'flex';
-    document.getElementById('progressText').textContent = `${doneCount}/${activities.length} selesai`;
-    document.getElementById('progressFill').style.width = activities.length ? `${(doneCount/activities.length)*100}%` : '0%';
-
-    const list = document.createElement('div');
-    list.className = 'list';
-
-    activities.forEach(act=>{
-      const item = document.createElement('div');
-      item.className = 'item' + (act.done ? ' done' : '');
-      item.dataset.id = act.id;
-
-      const cb = document.createElement('div');
-      cb.className = 'checkbox' + (act.done ? ' checked' : '');
-      cb.addEventListener('click', ()=>toggleDone(act.id));
-
-      const body = document.createElement('div');
-      body.className = 'item-body';
-
-      if(act.time){
-        const timeEl = document.createElement('div');
-        timeEl.className = 'item-time';
-        timeEl.textContent = act.time;
-        body.appendChild(timeEl);
-      }
-
-      const titleEl = document.createElement('div');
-      titleEl.className = 'item-title';
-      titleEl.textContent = act.title;
-      titleEl.contentEditable = 'false';
-      titleEl.addEventListener('blur', ()=>{
-        const newTitle = titleEl.textContent.trim();
-        if(newTitle && newTitle !== act.title){
-          act.title = newTitle;
-          saveActivities();
-        } else {
-          titleEl.textContent = act.title;
-        }
-        titleEl.contentEditable = 'false';
-      });
-      titleEl.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter'){ e.preventDefault(); titleEl.blur(); }
-      });
-      body.appendChild(titleEl);
-
-      const actions = document.createElement('div');
-      actions.className = 'item-actions';
-
-      const editBtn = document.createElement('button');
-      editBtn.innerHTML = '&#9998;';
-      editBtn.setAttribute('aria-label','Ubah');
-      editBtn.addEventListener('click', ()=>{
-        titleEl.contentEditable = 'true';
-        titleEl.focus();
-        const range = document.createRange();
-        range.selectNodeContents(titleEl);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-      });
-
-      const delBtn = document.createElement('button');
-      delBtn.innerHTML = '&#10005;';
-      delBtn.setAttribute('aria-label','Hapus');
-      delBtn.addEventListener('click', ()=>deleteActivity(act.id));
-
-      actions.appendChild(editBtn);
-      actions.appendChild(delBtn);
-
-      item.appendChild(cb);
-      item.appendChild(body);
-      item.appendChild(actions);
-      list.appendChild(item);
-    });
-
-    container.innerHTML = '';
-    container.appendChild(list);
-  }
-
-  function toggleDone(id){
-    const act = activities.find(a=>a.id===id);
-    if(act){
-      act.done = !act.done;
-      saveActivities();
-      render();
-    }
-  }
-
-  function deleteActivity(id){
-    activities = activities.filter(a=>a.id!==id);
-    saveActivities();
-    render();
-  }
-
-  function addActivity(){
-    const titleInput = document.getElementById('titleInput');
-    const timeInput = document.getElementById('timeInput');
-    const title = titleInput.value.trim();
-    if(!title) { titleInput.focus(); return; }
-    activities.push({
-      id: uid(),
-      title,
-      time: timeInput.value || '',
-      done: false,
-      createdAt: Date.now()
-    });
-    titleInput.value = '';
-    timeInput.value = '';
-    saveActivities();
-    render();
-    titleInput.focus();
-  }
-
-  document.getElementById('addBtn').addEventListener('click', addActivity);
-  document.getElementById('titleInput').addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter'){ addActivity(); }
+  tabLogin.addEventListener('click', () => {
+    tabLogin.classList.add('active');
+    tabSignup.classList.remove('active');
+    loginForm.style.display = 'block';
+    signupForm.style.display = 'none';
   });
 
-  document.getElementById('prevBtn').addEventListener('click', ()=>{
-    currentDate.setDate(currentDate.getDate()-1);
-    loadActivities();
-  });
-  document.getElementById('nextBtn').addEventListener('click', ()=>{
-    currentDate.setDate(currentDate.getDate()+1);
-    loadActivities();
-  });
-  document.getElementById('todayBtn').addEventListener('click', ()=>{
-    currentDate = new Date();
-    currentDate.setHours(0,0,0,0);
-    loadActivities();
+  tabSignup.addEventListener('click', () => {
+    tabSignup.classList.add('active');
+    tabLogin.classList.remove('active');
+    signupForm.style.display = 'block';
+    loginForm.style.display = 'none';
   });
 
-  loadActivities();
-})();
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('loginError');
+    const submitBtn = document.getElementById('loginSubmit');
+    errorEl.textContent = '';
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Memproses...';
+
+    try {
+      await signIn(email, password);
+      window.location.href = 'home.html';
+    } catch (err) {
+      errorEl.textContent = terjemahkanError(err.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Masuk';
+    }
+  });
+
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('signupError');
+    const infoEl = document.getElementById('signupInfo');
+    const submitBtn = document.getElementById('signupSubmit');
+    errorEl.textContent = '';
+    infoEl.textContent = '';
+
+    const fullName = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Memproses...';
+
+    try {
+      await signUp(email, password, fullName);
+      infoEl.textContent = 'Akun dibuat. Cek email kamu untuk konfirmasi, lalu login lewat tab Login.';
+      signupForm.reset();
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Buat akun';
+    } catch (err) {
+      errorEl.textContent = terjemahkanError(err.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Buat akun';
+    }
+  });
+
+  function terjemahkanError(msg) {
+    if (msg.includes('Invalid login credentials')) return 'Email atau password salah.';
+    if (msg.includes('already registered')) return 'Email ini sudah terdaftar.';
+    if (msg.includes('Password should be')) return 'Password minimal 6 karakter.';
+    if (msg.includes('Email not confirmed')) return 'Email belum dikonfirmasi. Cek inbox kamu.';
+    return msg;
+  }
+
+  // Kalau sudah login, langsung lempar ke home
+  redirectIfLoggedIn();
 </script>
 </body>
 </html>
