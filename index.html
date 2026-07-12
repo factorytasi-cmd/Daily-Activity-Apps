@@ -34,7 +34,27 @@
 
     <p class="error-text" id="loginError"></p>
 
+    <p style="text-align:right; margin:-6px 0 14px;">
+      <a href="#" id="forgotPasswordLink" style="font-size:12px; color:var(--peach-light); text-decoration:none;">Lupa password?</a>
+    </p>
+
     <button class="btn-primary" type="submit" id="loginSubmit">Masuk</button>
+  </form>
+
+  <!-- FORGOT PASSWORD FORM -->
+  <form id="forgotForm" style="display:none;">
+    <p style="font-size:12.5px; color:var(--text-secondary); margin:0 0 16px;">Masukkan email akunmu, nanti dikirim link buat bikin password baru.</p>
+
+    <p class="field-label">Email</p>
+    <input class="field-input" type="email" id="forgotEmail" placeholder="nama@email.com" required>
+
+    <p class="error-text" id="forgotError"></p>
+    <p class="info-text" id="forgotInfo"></p>
+
+    <button class="btn-primary" type="submit" id="forgotSubmit">Kirim link reset</button>
+    <p style="text-align:center; margin:14px 0 0;">
+      <a href="#" id="backToLoginLink" style="font-size:12px; color:var(--text-secondary); text-decoration:none;">&#8592; Kembali ke login</a>
+    </p>
   </form>
 
   <!-- SIGNUP FORM -->
@@ -140,6 +160,47 @@
 
   // Kalau sudah login, langsung lempar ke home
   redirectIfLoggedIn();
+
+  document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    loginForm.style.display = 'none';
+    document.getElementById('forgotForm').style.display = 'block';
+    document.querySelector('.tab-switch').style.display = 'none';
+  });
+
+  document.getElementById('backToLoginLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('forgotForm').style.display = 'none';
+    loginForm.style.display = 'block';
+    document.querySelector('.tab-switch').style.display = 'flex';
+  });
+
+  document.getElementById('forgotForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('forgotError');
+    const infoEl = document.getElementById('forgotInfo');
+    const submitBtn = document.getElementById('forgotSubmit');
+    errorEl.textContent = '';
+    infoEl.textContent = '';
+
+    const email = document.getElementById('forgotEmail').value.trim();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Mengirim...';
+
+    try {
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname.replace('index.html', '') + 'reset-password.html'
+      });
+      if (error) throw error;
+      infoEl.textContent = 'Link reset sudah dikirim. Cek email kamu (termasuk folder spam).';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Kirim link reset';
+    } catch (err) {
+      errorEl.textContent = err.message;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Kirim link reset';
+    }
+  });
 
   document.querySelectorAll('.toggle-password').forEach(btn => {
     btn.addEventListener('click', () => {
