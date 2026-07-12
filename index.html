@@ -12,7 +12,7 @@
   <div class="brand">
     <div class="brand-icon">&#9889;</div>
     <div class="brand-name">LUSS</div>
-    <div class="brand-tagline">Level up &amp; stay strong</div>
+    <div class="brand-tagline">Level Up &amp; Stay Strong</div>
   </div>
 
   <div class="tab-switch">
@@ -26,7 +26,10 @@
     <input class="field-input" type="email" id="loginEmail" placeholder="nama@email.com" required>
 
     <p class="field-label">Password</p>
-    <input class="field-input" type="password" id="loginPassword" placeholder="Masukkan password" required>
+    <div class="input-wrapper">
+      <input class="field-input" type="password" id="loginPassword" placeholder="Masukkan password" required>
+      <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Tampilkan password">&#128065;</button>
+    </div>
 
     <p class="error-text" id="loginError"></p>
 
@@ -42,7 +45,10 @@
     <input class="field-input" type="email" id="signupEmail" placeholder="nama@email.com" required>
 
     <p class="field-label">Password</p>
-    <input class="field-input" type="password" id="signupPassword" placeholder="Minimal 6 karakter" minlength="6" required>
+    <div class="input-wrapper">
+      <input class="field-input" type="password" id="signupPassword" placeholder="Minimal 6 karakter" minlength="6" required>
+      <button type="button" class="toggle-password" data-target="signupPassword" aria-label="Tampilkan password">&#128065;</button>
+    </div>
 
     <p class="error-text" id="signupError"></p>
     <p class="info-text" id="signupInfo"></p>
@@ -133,6 +139,15 @@
 
   // Kalau sudah login, langsung lempar ke home
   redirectIfLoggedIn();
+
+  document.querySelectorAll('.toggle-password').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      btn.style.opacity = isHidden ? '1' : '0.55';
+    });
+  });
 </script>
 </body>
 </html>
