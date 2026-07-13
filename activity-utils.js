@@ -121,6 +121,70 @@ function computeActivityRanking(activities, logsMap, today, windowDays){
   results.sort((x,y) => y.percent - x.percent);
   return results;
 }
+/** Breakdown harian: due/done tiap hari, N hari terakhir termasuk hari ini. */
+function computeDailyBreakdown(activities, logsMap, today, days){
+  const result = [];
+  for (let i = days - 1; i >= 0; i--){
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const due = activities.filter(a => isActivityDueOnDate(a, d));
+    const doneCount = due.filter(a => logsMap[`${a.id}|${formatDateKey(d)}`] === true).length;
+    result.push({
+      label: NAMA_HARI[isoWeekday(d)-1].slice(0,2),
+      dueCount: due.length, doneCount,
+      percent: due.length > 0 ? Math.round((doneCount/due.length)*100) : 0,
+      isCurrent: isToday(d)
+    });
+  }
+  return result;
+}
+
+/** Breakdown mingguan: due/done per blok 7 hari, N minggu terakhir (minggu ini di paling kanan). */
+function computeWeeklyBreakdown(activities, logsMap, today, weeksCount){
+  const result = [];
+  for (let w = weeksCount - 1; w >= 0; w--){
+    const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() - (w*7));
+    const weekStart = new Date(weekEnd); weekStart.setDate(weekStart.getDate() - 6);
+    let due = 0, done = 0;
+    for (let d = new Date(weekStart); d.getTime() <= weekEnd.getTime(); d.setDate(d.getDate()+1)){
+      const dayDue = activities.filter(a => isActivityDueOnDate(a, d));
+      due += dayDue.length;
+      done += dayDue.filter(a => logsMap[`${a.id}|${formatDateKey(d)}`] === true).length;
+    }
+    result.push({
+      label: w === 0 ? 'Ini' : `${weekStart.getDate()}-${weekEnd.getDate()} ${NAMA_BULAN[weekEnd.getMonth()].slice(0,3)}`,
+      dueCount: due, doneCount: done,
+      percent: due > 0 ? Math.round((done/due)*100) : 0,
+      isCurrent: w === 0
+    });
+  }
+  return result;
+}
+
+/** Breakdown bulanan: due/done per bulan kalender, N bulan terakhir (bulan ini di paling kanan). */
+function computeMonthlyBreakdown(activities, logsMap, today, monthsCount){
+  const result = [];
+  for (let m = monthsCount - 1; m >= 0; m--){
+    const monthDate = new Date(today.getFullYear(), today.getMonth() - m, 1);
+    const isCurrentMonth = (m === 0);
+    const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0).getDate();
+    const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
+    let due = 0, done = 0;
+    for (let day = 1; day <= lastDay; day++){
+      const d = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+      const dayDue = activities.filter(a => isActivityDueOnDate(a, d));
+      due += dayDue.length;
+      done += dayDue.filter(a => logsMap[`${a.id}|${formatDateKey(d)}`] === true).length;
+    }
+    result.push({
+      label: NAMA_BULAN[monthDate.getMonth()].slice(0,3),
+      dueCount: due, doneCount: done,
+      percent: due > 0 ? Math.round((done/due)*100) : 0,
+      isCurrent: isCurrentMonth
+    });
+  }
+  return result;
+}
+
 function ringkasJadwal(activity){
   if (activity.recurrence_type === 'daily') return 'Setiap hari';
   if (activity.recurrence_type === 'weekly') {

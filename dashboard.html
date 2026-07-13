@@ -39,8 +39,13 @@
   </div>
 
   <div style="background:var(--card); border:0.5px solid var(--border); border-radius:18px; padding:16px; margin-bottom:14px;">
-    <p style="margin:0 0 12px; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px;">Progres 7 hari terakhir</p>
-    <div id="weekChart" style="display:flex; align-items:flex-end; justify-content:space-between; height:70px; gap:6px;"></div>
+    <div class="segmented" style="margin-bottom:14px;">
+      <button type="button" class="active" data-view="daily">Harian</button>
+      <button type="button" data-view="weekly">Mingguan</button>
+      <button type="button" data-view="monthly">Bulanan</button>
+    </div>
+    <p style="margin:0 0 12px; font-size:11px; color:var(--text-secondary);" id="breakdownCaption">7 hari terakhir</p>
+    <div id="breakdownChart" style="display:flex; align-items:flex-end; justify-content:space-between; height:80px; gap:4px;"></div>
   </div>
 
   <div style="background:var(--card); border:0.5px solid var(--border); border-radius:18px; padding:16px; margin-bottom:14px;">
@@ -77,7 +82,7 @@
       : `<i class="ti ti-user"></i>`;
 
     const today = new Date(); today.setHours(0,0,0,0);
-    const windowStart = new Date(today); windowStart.setDate(windowStart.getDate() - 59);
+    const windowStart = new Date(today); windowStart.setDate(windowStart.getDate() - 364);
 
     const { data: activities } = await supabaseClient
       .from('activities')
@@ -98,7 +103,7 @@
     document.getElementById('screen').style.display = 'block';
 
     if (acts.length === 0) {
-      document.getElementById('weekChart').innerHTML = '<p class="empty-note" style="padding:10px 0;">Belum ada activity. Tambahkan dulu di Daily Activity.</p>';
+      document.getElementById('breakdownChart').innerHTML = '<p class="empty-note" style="padding:10px 0;">Belum ada activity. Tambahkan dulu di Daily Activity.</p>';
       document.getElementById('topConsistent').innerHTML = '<p class="empty-note" style="padding:0;">-</p>';
       document.getElementById('bottomConsistent').innerHTML = '<p class="empty-note" style="padding:0;">-</p>';
       return;
@@ -107,22 +112,43 @@
     // Streak
     document.getElementById('streakValue').textContent = computeStreak(acts, logsMap, today);
 
-    // Progress minggu ini
+    // Progress minggu ini (dipakai buat kartu ringkasan atas, selalu 7 hari)
     const week = computeWeekProgress(acts, logsMap, today);
     document.getElementById('weekPercentValue').textContent = `${week.percent}%`;
 
-    const chartEl = document.getElementById('weekChart');
-    chartEl.innerHTML = '';
-    week.days.forEach(day => {
-      const pct = day.dueCount > 0 ? (day.doneCount / day.dueCount) : 0;
-      const barHeight = day.dueCount > 0 ? Math.max(6, Math.round(pct * 66)) : 4;
-      const col = document.createElement('div');
-      col.style.cssText = 'flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;';
-      col.innerHTML = `
-        <div style="width:100%; height:${barHeight}px; background:${day.dueCount > 0 ? 'var(--peach)' : 'var(--border)'}; border-radius:6px;"></div>
-        <span style="font-size:10px; color:${day.isToday ? 'var(--peach-light)' : 'var(--text-faint)'};">${day.label}</span>
-      `;
-      chartEl.appendChild(col);
+    // ---- Breakdown chart (Harian / Mingguan / Bulanan) ----
+    const captions = { daily: '7 hari terakhir', weekly: '4 minggu terakhir', monthly: '12 bulan terakhir' };
+
+    function renderBreakdown(view){
+      let data;
+      if (view === 'daily') data = computeDailyBreakdown(acts, logsMap, today, 7);
+      else if (view === 'weekly') data = computeWeeklyBreakdown(acts, logsMap, today, 4);
+      else data = computeMonthlyBreakdown(acts, logsMap, today, 12);
+
+      document.getElementById('breakdownCaption').textContent = captions[view];
+
+      const chartEl = document.getElementById('breakdownChart');
+      chartEl.innerHTML = '';
+      data.forEach(item => {
+        const barHeight = item.dueCount > 0 ? Math.max(6, Math.round((item.percent/100) * 66)) : 4;
+        const col = document.createElement('div');
+        col.style.cssText = 'flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;';
+        col.innerHTML = `
+          <div style="width:100%; height:${barHeight}px; background:${item.dueCount > 0 ? (item.isCurrent ? 'var(--grad-accent)' : 'var(--peach)') : 'var(--border)'}; border-radius:6px;" title="${item.percent}%"></div>
+          <span style="font-size:${view==='monthly' ? '8.5px' : '10px'}; color:${item.isCurrent ? 'var(--peach-light)' : 'var(--text-faint)'}; white-space:nowrap;">${item.label}</span>
+        `;
+        chartEl.appendChild(col);
+      });
+    }
+
+    renderBreakdown('daily');
+
+    document.querySelectorAll('.segmented button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.segmented button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderBreakdown(btn.dataset.view);
+      });
     });
 
     // Ranking activity
