@@ -10,11 +10,18 @@
 
 <div class="loading-screen" id="loadingScreen">Memuat...</div>
 
-<div class="screen" id="screen" style="display:none; text-align:center; padding-top:100px;">
+<div class="screen with-nav" id="screen" style="display:none; text-align:center; padding-top:100px;">
   <div style="font-size:40px; margin-bottom:16px;">&#128736;</div>
-  <p style="font-size:18px; font-weight:600; margin:0 0 8px;" id="featureTitle">Fitur ini</p>
+  <p style="font-size:18px; font-weight:700; margin:0 0 8px;" id="featureTitle">Fitur ini</p>
   <p style="font-size:13.5px; color:var(--text-secondary); margin:0 0 28px;">Sedang dibangun, akan segera hadir.</p>
   <a href="home.html" style="color:var(--peach-light); font-size:13.5px; text-decoration:none;">&#8592; Kembali ke home</a>
+</div>
+
+<div class="bottom-nav">
+  <a href="home.html" class="nav-item"><i class="ti ti-home-filled"></i><span>Home</span></a>
+  <a href="daily-activity.html" class="nav-item"><i class="ti ti-calendar-check"></i><span>Activity</span></a>
+  <a href="dashboard.html" class="nav-item"><i class="ti ti-chart-bar"></i><span>Dashboard</span></a>
+  <a href="profile.html" class="nav-item"><i class="ti ti-user"></i><span>Profil</span></a>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

@@ -1,35 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 :root{
   --bg: #121212;
+  --bg-top: #1A1520;
+  --bg-mid: #14121A;
   --card: #1B1815;
   --card-alt: #242119;
   --border: #33291F;
   --border-soft: #2A241D;
   --text: #F5F1EC;
-  --text-secondary: #9C9691;
-  --text-faint: #5A544C;
+  --text-secondary: #B3A9C4;
+  --text-faint: #6B6478;
   --peach: #FFB48F;
   --peach-light: #FFCBAE;
   --peach-dark: #5A3A26;
+  --lavender: #B39DFF;
+  --lavender-light: #C9B8FF;
+  --coral: #F5A889;
   --danger: #E08E75;
   --danger-border: #4A2E27;
+  --grad-accent: linear-gradient(135deg, var(--peach), var(--lavender));
 }
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
-  background:var(--bg);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255,180,143,0.16) 0%, transparent 38%),
+    radial-gradient(circle at 100% 12%, rgba(179,157,255,0.14) 0%, transparent 38%),
+    linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 40%, var(--bg) 100%);
+  background-attachment:fixed;
   color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height:100vh;
 }
 
 .screen{
   max-width:400px;
   margin:0 auto;
-  padding:36px 22px 60px;
+  padding:36px 22px 100px;
   min-height:100vh;
   box-sizing:border-box;
 }
+.screen.with-nav{ padding-bottom:100px; }
 
 .brand{
   display:flex;
@@ -50,8 +63,8 @@ body{
 }
 .brand-name{
   font-size:21px;
-  font-weight:600;
-  letter-spacing:0.5px;
+  font-weight:800;
+  letter-spacing:0.3px;
 }
 .brand-tagline{
   font-size:12px;
@@ -167,8 +180,8 @@ body{
 }
 
 .menu-card{
-  background:var(--card);
-  border:0.5px solid var(--border);
+  background:linear-gradient(135deg, rgba(255,180,143,0.10), rgba(179,157,255,0.06));
+  border:0.5px solid rgba(255,180,143,0.22);
   border-radius:20px;
   padding:18px;
   display:flex;
@@ -192,7 +205,7 @@ body{
 .menu-title{
   margin:0;
   font-size:16px;
-  font-weight:600;
+  font-weight:700;
   color:var(--text);
 }
 .menu-desc{
@@ -201,11 +214,72 @@ body{
   color:var(--text-secondary);
 }
 
-.top-bar{
+.app-header{
+  position:sticky;
+  top:0;
+  z-index:10;
+  margin:-36px -22px 18px;
+  padding:16px 22px;
+  background:rgba(20,18,26,0.75);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-bottom:0.5px solid rgba(255,255,255,0.08);
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-bottom:18px;
+}
+.app-header .logo-row{display:flex; align-items:center; gap:9px;}
+.app-header .logo-badge{
+  width:32px; height:32px; border-radius:10px;
+  background:var(--grad-accent);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.app-header .logo-name{margin:0; font-size:16px; font-weight:800; color:var(--text); letter-spacing:0.3px;}
+.app-header .logo-tagline{margin:0; font-size:8px; color:var(--text-secondary); letter-spacing:0.6px; font-weight:600;}
+.app-header .header-actions{display:flex; align-items:center; gap:8px;}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:400px;
+  display:flex;
+  justify-content:space-between;
+  padding:11px 26px 18px;
+  background:rgba(20,18,26,0.85);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-top:0.5px solid rgba(255,255,255,0.08);
+  z-index:10;
+}
+.nav-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  text-decoration:none;
+  color:var(--text-faint);
+}
+.nav-item span{font-size:9px; font-weight:600;}
+.nav-item i{font-size:19px;}
+.nav-item.active{color:var(--peach);}
+
+.top-bar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  margin:-36px -22px 18px;
+  padding:16px 22px;
+  background:rgba(20,18,26,0.75);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-bottom:0.5px solid rgba(255,255,255,0.08);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
 }
 .icon-btn{
   width:30px;
@@ -316,20 +390,20 @@ body{
 
 .fab{
   position:fixed;
-  bottom:26px;
+  bottom:96px;
   left:50%;
   transform:translateX(calc(-50% + 165px));
   width:52px;
   height:52px;
   border-radius:50%;
-  background:var(--peach);
+  background:var(--grad-accent);
   color:var(--bg);
   display:flex;
   align-items:center;
   justify-content:center;
   font-size:24px;
   text-decoration:none;
-  box-shadow:0 4px 14px rgba(0,0,0,0.35);
+  box-shadow:0 4px 18px rgba(255,180,143,0.3);
 }
 
 .segmented{

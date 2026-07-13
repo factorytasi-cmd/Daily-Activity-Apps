@@ -11,13 +11,13 @@
 
 <div class="loading-screen" id="loadingScreen">Memuat...</div>
 
-<div class="screen" id="screen" style="display:none;">
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px;">
+<div class="screen with-nav" id="screen" style="display:none;">
+  <div class="top-bar" style="margin-bottom:22px;">
     <div style="display:flex; align-items:center; gap:10px;">
       <a href="home.html" class="icon-btn"><i class="ti ti-arrow-left"></i></a>
       <div>
         <p style="margin:0; font-size:12px; color:var(--text-secondary);" id="greetingName">Halo</p>
-        <p style="margin:2px 0 0; font-size:18px; font-weight:600;">Dashboard</p>
+        <p style="margin:2px 0 0; font-size:18px; font-weight:700;">Dashboard</p>
       </div>
     </div>
     <a href="profile.html" class="icon-btn" style="width:36px; height:36px; border-radius:50%;" id="avatarLink">
@@ -26,10 +26,10 @@
   </div>
 
   <div style="display:flex; gap:10px; margin-bottom:14px;">
-    <div style="flex:1; background:var(--peach); border-radius:18px; padding:16px;">
+    <div style="flex:1; background:var(--grad-accent); border-radius:18px; padding:16px;">
       <i class="ti ti-flame" style="font-size:20px; color:var(--bg);"></i>
-      <p style="margin:10px 0 0; font-size:22px; font-weight:600; color:var(--bg);" id="streakValue">0</p>
-      <p style="margin:1px 0 0; font-size:11px; color:var(--peach-dark);">Hari streak</p>
+      <p style="margin:10px 0 0; font-size:22px; font-weight:700; color:var(--bg);" id="streakValue">0</p>
+      <p style="margin:1px 0 0; font-size:11px; color:rgba(18,18,18,0.65);">Hari streak</p>
     </div>
     <div style="flex:1; background:var(--card); border:0.5px solid var(--border); border-radius:18px; padding:16px;">
       <i class="ti ti-checkbox" style="font-size:20px; color:var(--peach-light);"></i>
@@ -52,6 +52,13 @@
     <p style="margin:0 0 12px; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px;">Activity paling tidak konsisten</p>
     <div id="bottomConsistent"></div>
   </div>
+</div>
+
+<div class="bottom-nav">
+  <a href="home.html" class="nav-item"><i class="ti ti-home-filled"></i><span>Home</span></a>
+  <a href="daily-activity.html" class="nav-item"><i class="ti ti-calendar-check"></i><span>Activity</span></a>
+  <a href="dashboard.html" class="nav-item active"><i class="ti ti-chart-bar"></i><span>Dashboard</span></a>
+  <a href="profile.html" class="nav-item"><i class="ti ti-user"></i><span>Profil</span></a>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
