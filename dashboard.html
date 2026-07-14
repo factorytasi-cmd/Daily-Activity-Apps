@@ -82,7 +82,7 @@
       : `<i class="ti ti-user"></i>`;
 
     const today = new Date(); today.setHours(0,0,0,0);
-    const windowStart = new Date(today); windowStart.setDate(windowStart.getDate() - 364);
+    const windowStart = new Date(today); windowStart.setDate(windowStart.getDate() - 190);
 
     const { data: activities } = await supabaseClient
       .from('activities')
@@ -95,6 +95,14 @@
       .select('activity_id, log_date, is_done')
       .eq('user_id', user.id)
       .gte('log_date', formatDateKey(windowStart));
+
+    const { data: monthlyStats } = await supabaseClient
+      .from('monthly_stats')
+      .select('year_month, total_due, total_done')
+      .eq('user_id', user.id);
+
+    const monthlyStatsMap = {};
+    (monthlyStats || []).forEach(s => { monthlyStatsMap[s.year_month] = s; });
 
     const logsMap = buildLogsMap(logs);
     const acts = activities || [];
@@ -123,7 +131,7 @@
       let data;
       if (view === 'daily') data = computeDailyBreakdown(acts, logsMap, today, 7);
       else if (view === 'weekly') data = computeWeeklyBreakdown(acts, logsMap, today, 4);
-      else data = computeMonthlyBreakdown(acts, logsMap, today, 12);
+      else data = computeMonthlyBreakdownArchiveAware(acts, logsMap, monthlyStatsMap, today, 12);
 
       document.getElementById('breakdownCaption').textContent = captions[view];
 

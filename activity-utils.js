@@ -185,6 +185,48 @@ function computeMonthlyBreakdown(activities, logsMap, today, monthsCount){
   return result;
 }
 
+/**
+ * Breakdown bulanan yang sadar arsip: bulan dalam 6 bulan terakhir dihitung
+ * dari data mentah (logsMap), bulan yang lebih lama diambil dari monthly_stats
+ * (hasil arsip otomatis), karena detail hariannya sudah dihapus dari server.
+ */
+function computeMonthlyBreakdownArchiveAware(activities, logsMap, monthlyStatsMap, today, monthsCount){
+  const rawCutoff = new Date(today); rawCutoff.setMonth(rawCutoff.getMonth() - 6);
+  const result = [];
+
+  for (let m = monthsCount - 1; m >= 0; m--){
+    const monthDate = new Date(today.getFullYear(), today.getMonth() - m, 1);
+    const yearMonthKey = `${monthDate.getFullYear()}-${String(monthDate.getMonth()+1).padStart(2,'0')}`;
+    const isCurrentMonth = (m === 0);
+
+    let due = 0, done = 0;
+
+    if (monthDate >= new Date(rawCutoff.getFullYear(), rawCutoff.getMonth(), 1)){
+      // Masih dalam window data mentah, hitung langsung dari jadwal activity
+      const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0).getDate();
+      const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
+      for (let day = 1; day <= lastDay; day++){
+        const d = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+        const dayDue = activities.filter(a => isActivityDueOnDate(a, d));
+        due += dayDue.length;
+        done += dayDue.filter(a => logsMap[`${a.id}|${formatDateKey(d)}`] === true).length;
+      }
+    } else if (monthlyStatsMap[yearMonthKey]) {
+      // Sudah diarsip, pakai rangkuman
+      due = monthlyStatsMap[yearMonthKey].total_due;
+      done = monthlyStatsMap[yearMonthKey].total_done;
+    }
+
+    result.push({
+      label: NAMA_BULAN[monthDate.getMonth()].slice(0,3),
+      dueCount: due, doneCount: done,
+      percent: due > 0 ? Math.round((done/due)*100) : 0,
+      isCurrent: isCurrentMonth
+    });
+  }
+  return result;
+}
+
 function ringkasJadwal(activity){
   if (activity.recurrence_type === 'daily') return 'Setiap hari';
   if (activity.recurrence_type === 'weekly') {

@@ -10,7 +10,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'LUSS';
   const options = {
     body: data.body || '',
-    tag: 'luss-reminder',
+    tag: data.tag || `luss-${Date.now()}`,
+    renotify: true,
     requireInteraction: false
   };
 
