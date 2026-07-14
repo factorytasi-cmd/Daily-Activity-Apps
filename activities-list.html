@@ -3,9 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LUSS — Kelola Activity</title>
+<title>LUSS — Kelola Aktivitas</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  .select-row{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .select-row button{
+    background:none; border:0.5px solid var(--border); border-radius:10px;
+    color:var(--text-secondary); font-size:12px; padding:7px 12px; cursor:pointer;
+    font-family:inherit;
+  }
+  .bulk-bar{
+    position:fixed; bottom:96px; left:50%; transform:translateX(-50%);
+    width:calc(100% - 44px); max-width:356px;
+    background:var(--card); border:0.5px solid var(--border); border-radius:16px;
+    padding:12px 16px; display:none; align-items:center; justify-content:space-between;
+    box-shadow:0 6px 20px rgba(0,0,0,0.35); z-index:11;
+  }
+  .row-checkbox{
+    width:20px; height:20px; border-radius:6px; border:1.5px solid var(--text-faint);
+    flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .row-checkbox.checked{ background:var(--peach); border-color:var(--peach); color:var(--bg); }
+</style>
 </head>
 <body>
 
@@ -15,16 +35,25 @@
   <div class="top-bar">
     <div style="display:flex; align-items:center; gap:10px;">
       <a href="daily-activity.html" class="icon-btn"><i class="ti ti-arrow-left"></i></a>
-      <span class="top-bar-title">Kelola activity</span>
+      <span class="top-bar-title">Kelola aktivitas</span>
     </div>
+  </div>
+
+  <div class="select-row">
+    <button id="selectAllBtn">Pilih semua</button>
   </div>
 
   <div id="listContainer"></div>
 </div>
 
+<div class="bulk-bar" id="bulkBar">
+  <span style="font-size:12.5px;" id="bulkCount">0 dipilih</span>
+  <button id="bulkDeleteBtn" style="background:var(--danger); border:none; border-radius:10px; color:var(--bg); font-size:12.5px; font-weight:600; padding:8px 14px; cursor:pointer;">Hapus terpilih</button>
+</div>
+
 <div class="bottom-nav">
-  <a href="home.html" class="nav-item"><i class="ti ti-home-filled"></i><span>Home</span></a>
-  <a href="daily-activity.html" class="nav-item active"><i class="ti ti-calendar-check"></i><span>Activity</span></a>
+  <a href="home.html" class="nav-item"><i class="ti ti-home-filled"></i><span>Beranda</span></a>
+  <a href="daily-activity.html" class="nav-item active"><i class="ti ti-calendar-check"></i><span>Aktivitas</span></a>
   <a href="dashboard.html" class="nav-item"><i class="ti ti-chart-bar"></i><span>Dashboard</span></a>
   <a href="profile.html" class="nav-item"><i class="ti ti-user"></i><span>Profil</span></a>
 </div>
@@ -34,6 +63,8 @@
 <script src="activity-utils.js"></script>
 <script>
   let currentUser = null;
+  let allActivities = [];
+  let selectedIds = new Set();
 
   (async function init(){
     const auth = await requireAuth();
@@ -46,84 +77,117 @@
     await loadActivities();
   })();
 
+  function todayKey(){
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  }
+
   async function loadActivities(){
+    // Cuma versi yang sedang berlaku (belum ditutup) yang ditampilkan di sini
     const { data, error } = await supabaseClient
       .from('activities')
       .select('*')
       .eq('user_id', currentUser.id)
-      .eq('is_active', true)
+      .is('effective_until', null)
       .order('activity_time');
 
     const container = document.getElementById('listContainer');
+    selectedIds = new Set();
+    updateBulkBar();
 
     if (error || !data || data.length === 0) {
-      container.innerHTML = `<div class="empty-note">Belum ada activity yang dibuat.</div>`;
+      allActivities = [];
+      container.innerHTML = `<div class="empty-note">Belum ada aktivitas yang dibuat.</div>`;
       return;
     }
 
+    allActivities = data;
     container.innerHTML = '';
     data.forEach(activity => {
       const row = document.createElement('div');
       row.className = 'manage-row';
       row.dataset.id = activity.id;
-      renderViewMode(row, activity);
+      row.innerHTML = `
+        <div class="row-checkbox" data-id="${activity.id}"></div>
+        <div style="flex:1; min-width:0;">
+          <p class="mr-title">${escapeHtml(activity.subject)}</p>
+          <p class="mr-sub">${ringkasJadwal(activity)} &middot; ${activity.activity_time.slice(0,5)}</p>
+        </div>
+        <a href="add-activity.html?edit=${activity.id}" class="mr-edit" aria-label="Edit" style="margin-left:auto; background:none; border:none; color:var(--peach-light); font-size:16px; cursor:pointer; padding:4px; text-decoration:none;"><i class="ti ti-edit"></i></a>
+        <button class="mr-delete" aria-label="Hapus" style="margin-left:4px;" data-single-delete="${activity.id}"><i class="ti ti-trash"></i></button>
+      `;
       container.appendChild(row);
+    });
+
+    container.querySelectorAll('.row-checkbox').forEach(cb => {
+      cb.addEventListener('click', () => toggleSelect(cb.dataset.id));
+    });
+    container.querySelectorAll('[data-single-delete]').forEach(btn => {
+      btn.addEventListener('click', () => promptHapus([btn.dataset.singleDelete]));
     });
   }
 
-  function renderViewMode(row, activity){
-    row.innerHTML = `
-      <div>
-        <p class="mr-title">${escapeHtml(activity.subject)}</p>
-        <p class="mr-sub">${ringkasJadwal(activity)} &middot; ${activity.activity_time.slice(0,5)}</p>
-      </div>
-      <button class="mr-edit" aria-label="Edit" style="margin-left:auto; background:none; border:none; color:var(--peach-light); font-size:16px; cursor:pointer; padding:4px;"><i class="ti ti-edit"></i></button>
-      <button class="mr-delete" aria-label="Hapus" style="margin-left:4px;"><i class="ti ti-trash"></i></button>
-    `;
-    row.querySelector('.mr-delete').addEventListener('click', () => hapusActivity(activity.id, activity.subject));
-    row.querySelector('.mr-edit').addEventListener('click', () => renderEditMode(row, activity));
+  function toggleSelect(id){
+    if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+    document.querySelector(`.row-checkbox[data-id="${id}"]`).classList.toggle('checked');
+    updateBulkBar();
   }
 
-  function renderEditMode(row, activity){
-    row.innerHTML = `
-      <div style="flex:1;">
-        <input type="text" class="field-input edit-subject" value="${escapeHtml(activity.subject)}" style="margin-bottom:8px; padding:8px 10px;">
-        <input type="time" class="field-input edit-time" value="${activity.activity_time.slice(0,5)}" style="margin-bottom:0; padding:8px 10px;">
-        <p class="error-text edit-error" style="margin:6px 0 0;"></p>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:6px; margin-left:8px;">
-        <button class="mr-save" aria-label="Simpan" style="background:var(--peach); border:none; border-radius:8px; width:30px; height:30px; color:var(--bg); cursor:pointer;"><i class="ti ti-check"></i></button>
-        <button class="mr-cancel" aria-label="Batal" style="background:var(--card-alt); border:none; border-radius:8px; width:30px; height:30px; color:var(--text-secondary); cursor:pointer;"><i class="ti ti-x"></i></button>
-      </div>
-    `;
-    row.querySelector('.mr-cancel').addEventListener('click', () => renderViewMode(row, activity));
-    row.querySelector('.mr-save').addEventListener('click', () => simpanEdit(row, activity));
+  function updateBulkBar(){
+    const bar = document.getElementById('bulkBar');
+    if (selectedIds.size > 0) {
+      bar.style.display = 'flex';
+      document.getElementById('bulkCount').textContent = `${selectedIds.size} dipilih`;
+    } else {
+      bar.style.display = 'none';
+    }
   }
 
-  async function simpanEdit(row, activity){
-    const newSubject = row.querySelector('.edit-subject').value.trim();
-    const newTime = row.querySelector('.edit-time').value;
-    const errorEl = row.querySelector('.edit-error');
+  document.getElementById('selectAllBtn').addEventListener('click', () => {
+    const allSelected = selectedIds.size === allActivities.length && allActivities.length > 0;
+    if (allSelected) {
+      selectedIds = new Set();
+    } else {
+      selectedIds = new Set(allActivities.map(a => a.id));
+    }
+    document.querySelectorAll('.row-checkbox').forEach(cb => {
+      cb.classList.toggle('checked', selectedIds.has(cb.dataset.id));
+    });
+    updateBulkBar();
+  });
 
-    if (!newSubject) { errorEl.textContent = 'Nama activity tidak boleh kosong.'; return; }
-    if (!newTime) { errorEl.textContent = 'Jam activity wajib diisi.'; return; }
+  document.getElementById('bulkDeleteBtn').addEventListener('click', () => {
+    promptHapus([...selectedIds]);
+  });
+
+  async function promptHapus(ids){
+    const label = ids.length === 1 ? 'aktivitas ini' : `${ids.length} aktivitas terpilih`;
+    const tanggal = prompt(
+      `Berhenti mulai tanggal berapa? (format YYYY-MM-DD)\n\nRiwayat ${label} sebelum tanggal ini akan tetap tersimpan di Dashboard.`,
+      todayKey()
+    );
+    if (!tanggal) return;
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) {
+      alert('Format tanggal tidak valid. Gunakan format YYYY-MM-DD, contoh: 2026-07-15');
+      return;
+    }
+
+    const sehariSebelum = new Date(tanggal);
+    sehariSebelum.setDate(sehariSebelum.getDate() - 1);
+    const sehariSebelumKey = `${sehariSebelum.getFullYear()}-${String(sehariSebelum.getMonth()+1).padStart(2,'0')}-${String(sehariSebelum.getDate()).padStart(2,'0')}`;
 
     const { error } = await supabaseClient
       .from('activities')
-      .update({ subject: newSubject, activity_time: newTime })
-      .eq('id', activity.id);
+      .update({ effective_until: sehariSebelumKey })
+      .in('id', ids);
 
-    if (error) { errorEl.textContent = error.message; return; }
+    if (error) {
+      alert('Gagal menghapus: ' + error.message);
+      return;
+    }
 
-    activity.subject = newSubject;
-    activity.activity_time = newTime;
-    renderViewMode(row, activity);
-  }
-
-  async function hapusActivity(id, subject){
-    if (!confirm(`Hapus activity "${subject}"? Riwayat checklist-nya juga akan terhapus.`)) return;
-    await supabaseClient.from('activities').delete().eq('id', id);
-    loadActivities();
+    await loadActivities();
   }
 
   function escapeHtml(str){

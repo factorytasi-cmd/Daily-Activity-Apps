@@ -6,12 +6,28 @@
 <title>LUSS — Dashboard</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  .type-section{
+    background:var(--card); border:0.5px solid var(--border); border-radius:18px;
+    padding:16px; margin-bottom:14px;
+  }
+  .type-section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:4px; }
+  .type-section-title{ margin:0; font-size:14.5px; font-weight:700; }
+  .type-section-period{ margin:0 0 14px; font-size:11px; color:var(--text-secondary); }
+  .type-percent-row{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .type-percent-value{ font-size:26px; font-weight:800; }
+  .type-percent-bar{ flex:1; height:6px; background:var(--card-alt); border-radius:3px; overflow:hidden; }
+  .type-percent-fill{ height:100%; background:var(--grad-accent); }
+  .rank-line{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .rank-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+</style>
 </head>
 <body>
 
 <div class="loading-screen" id="loadingScreen">Memuat...</div>
 
 <div class="screen with-nav" id="screen" style="display:none;">
+
   <div class="top-bar" style="margin-bottom:22px;">
     <div style="display:flex; align-items:center; gap:10px;">
       <a href="home.html" class="icon-btn"><i class="ti ti-arrow-left"></i></a>
@@ -25,7 +41,7 @@
     </a>
   </div>
 
-  <div style="display:flex; gap:10px; margin-bottom:14px;">
+  <div style="display:flex; gap:10px; margin-bottom:20px;">
     <div style="flex:1; background:var(--grad-accent); border-radius:18px; padding:16px;">
       <i class="ti ti-flame" style="font-size:20px; color:var(--bg);"></i>
       <p style="margin:10px 0 0; font-size:22px; font-weight:700; color:var(--bg);" id="streakValue">0</p>
@@ -33,35 +49,42 @@
     </div>
     <div style="flex:1; background:var(--card); border:0.5px solid var(--border); border-radius:18px; padding:16px;">
       <i class="ti ti-checkbox" style="font-size:20px; color:var(--peach-light);"></i>
-      <p style="margin:10px 0 0; font-size:22px; font-weight:600;" id="weekPercentValue">0%</p>
+      <p style="margin:10px 0 0; font-size:22px; font-weight:700;" id="weekPercentValue">0%</p>
       <p style="margin:1px 0 0; font-size:11px; color:var(--text-secondary);">Selesai minggu ini</p>
     </div>
   </div>
 
-  <div style="background:var(--card); border:0.5px solid var(--border); border-radius:18px; padding:16px; margin-bottom:14px;">
-    <div class="segmented" style="margin-bottom:14px;">
-      <button type="button" class="active" data-view="daily">Harian</button>
-      <button type="button" data-view="weekly">Mingguan</button>
-      <button type="button" data-view="monthly">Bulanan</button>
+  <p style="margin:0 0 12px; font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px;">Performance per tipe aktivitas</p>
+
+  <div class="type-section">
+    <div class="type-section-head">
+      <p class="type-section-title">Harian</p>
     </div>
-    <p style="margin:0 0 12px; font-size:11px; color:var(--text-secondary);" id="breakdownCaption">7 hari terakhir</p>
-    <div id="breakdownChart" style="display:flex; align-items:flex-end; justify-content:space-between; height:80px; gap:4px;"></div>
+    <p class="type-section-period">7 hari terakhir (tidak termasuk hari ini)</p>
+    <div id="dailySection"></div>
   </div>
 
-  <div style="background:var(--card); border:0.5px solid var(--border); border-radius:18px; padding:16px; margin-bottom:14px;">
-    <p style="margin:0 0 12px; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px;">Activity paling konsisten</p>
-    <div id="topConsistent"></div>
+  <div class="type-section">
+    <div class="type-section-head">
+      <p class="type-section-title">Mingguan</p>
+    </div>
+    <p class="type-section-period">4 minggu penuh sebelumnya (tidak termasuk minggu berjalan)</p>
+    <div id="weeklySection"></div>
   </div>
 
-  <div style="background:var(--card); border:0.5px solid var(--border); border-radius:18px; padding:16px;">
-    <p style="margin:0 0 12px; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px;">Activity paling tidak konsisten</p>
-    <div id="bottomConsistent"></div>
+  <div class="type-section">
+    <div class="type-section-head">
+      <p class="type-section-title">Bulanan</p>
+    </div>
+    <p class="type-section-period">5 bulan penuh sebelumnya (tidak termasuk bulan berjalan)</p>
+    <div id="monthlySection"></div>
   </div>
+
 </div>
 
 <div class="bottom-nav">
-  <a href="home.html" class="nav-item"><i class="ti ti-home-filled"></i><span>Home</span></a>
-  <a href="daily-activity.html" class="nav-item"><i class="ti ti-calendar-check"></i><span>Activity</span></a>
+  <a href="home.html" class="nav-item"><i class="ti ti-home-filled"></i><span>Beranda</span></a>
+  <a href="daily-activity.html" class="nav-item"><i class="ti ti-calendar-check"></i><span>Aktivitas</span></a>
   <a href="dashboard.html" class="nav-item active"><i class="ti ti-chart-bar"></i><span>Dashboard</span></a>
   <a href="profile.html" class="nav-item"><i class="ti ti-user"></i><span>Profil</span></a>
 </div>
@@ -82,27 +105,19 @@
       : `<i class="ti ti-user"></i>`;
 
     const today = new Date(); today.setHours(0,0,0,0);
+    // 5 bulan penuh ke belakang bisa sampai ~150 hari, plus buffer -> ambil 190 hari data mentah
     const windowStart = new Date(today); windowStart.setDate(windowStart.getDate() - 190);
 
     const { data: activities } = await supabaseClient
       .from('activities')
       .select('*')
-      .eq('user_id', user.id)
-      .eq('is_active', true);
+      .eq('user_id', user.id);
 
     const { data: logs } = await supabaseClient
       .from('checklist_logs')
       .select('activity_id, log_date, is_done')
       .eq('user_id', user.id)
       .gte('log_date', formatDateKey(windowStart));
-
-    const { data: monthlyStats } = await supabaseClient
-      .from('monthly_stats')
-      .select('year_month, total_due, total_done')
-      .eq('user_id', user.id);
-
-    const monthlyStatsMap = {};
-    (monthlyStats || []).forEach(s => { monthlyStatsMap[s.year_month] = s; });
 
     const logsMap = buildLogsMap(logs);
     const acts = activities || [];
@@ -111,74 +126,69 @@
     document.getElementById('screen').style.display = 'block';
 
     if (acts.length === 0) {
-      document.getElementById('breakdownChart').innerHTML = '<p class="empty-note" style="padding:10px 0;">Belum ada activity. Tambahkan dulu di Daily Activity.</p>';
-      document.getElementById('topConsistent').innerHTML = '<p class="empty-note" style="padding:0;">-</p>';
-      document.getElementById('bottomConsistent').innerHTML = '<p class="empty-note" style="padding:0;">-</p>';
+      ['dailySection','weeklySection','monthlySection'].forEach(id => {
+        document.getElementById(id).innerHTML = '<p class="empty-note" style="padding:0; text-align:left;">Belum ada aktivitas.</p>';
+      });
       return;
     }
 
-    // Streak
+    // Streak & progress minggu ini (keseluruhan, semua tipe)
     document.getElementById('streakValue').textContent = computeStreak(acts, logsMap, today);
-
-    // Progress minggu ini (dipakai buat kartu ringkasan atas, selalu 7 hari)
     const week = computeWeekProgress(acts, logsMap, today);
     document.getElementById('weekPercentValue').textContent = `${week.percent}%`;
 
-    // ---- Breakdown chart (Harian / Mingguan / Bulanan) ----
-    const captions = { daily: '7 hari terakhir', weekly: '4 minggu terakhir', monthly: '12 bulan terakhir' };
-
-    function renderBreakdown(view){
-      let data;
-      if (view === 'daily') data = computeDailyBreakdown(acts, logsMap, today, 7);
-      else if (view === 'weekly') data = computeWeeklyBreakdown(acts, logsMap, today, 4);
-      else data = computeMonthlyBreakdownArchiveAware(acts, logsMap, monthlyStatsMap, today, 12);
-
-      document.getElementById('breakdownCaption').textContent = captions[view];
-
-      const chartEl = document.getElementById('breakdownChart');
-      chartEl.innerHTML = '';
-      data.forEach(item => {
-        const barHeight = item.dueCount > 0 ? Math.max(6, Math.round((item.percent/100) * 66)) : 4;
-        const col = document.createElement('div');
-        col.style.cssText = 'flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;';
-        col.innerHTML = `
-          <div style="width:100%; height:${barHeight}px; background:${item.dueCount > 0 ? (item.isCurrent ? 'var(--grad-accent)' : 'var(--peach)') : 'var(--border)'}; border-radius:6px;" title="${item.percent}%"></div>
-          <span style="font-size:${view==='monthly' ? '8.5px' : '10px'}; color:${item.isCurrent ? 'var(--peach-light)' : 'var(--text-faint)'}; white-space:nowrap;">${item.label}</span>
-        `;
-        chartEl.appendChild(col);
-      });
-    }
-
-    renderBreakdown('daily');
-
-    document.querySelectorAll('.segmented button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.segmented button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderBreakdown(btn.dataset.view);
-      });
-    });
-
-    // Ranking activity
-    const ranking = computeActivityRanking(acts, logsMap, today, 30);
-
-    function renderRankingList(container, items){
-      if (items.length === 0) {
-        container.innerHTML = '<p class="empty-note" style="padding:0; text-align:left;">Belum cukup data.</p>';
-        return;
-      }
-      container.innerHTML = items.map(r => `
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-          <span style="width:8px; height:8px; border-radius:50%; background:var(--peach); flex-shrink:0;"></span>
-          <span style="font-size:13.5px; flex:1;">${escapeHtml(r.activity.subject)}</span>
-          <span style="font-size:12px; color:var(--peach-light);">${r.percent}%</span>
-        </div>
-      `).join('');
-    }
-
-    renderRankingList(document.getElementById('topConsistent'), ranking.slice(0, 2));
-    renderRankingList(document.getElementById('bottomConsistent'), ranking.slice(-2).reverse());
+    renderTypeSection('dailySection', acts, logsMap, 'daily', getDailyTypeDates(today, 7));
+    renderTypeSection('weeklySection', acts, logsMap, 'weekly', getWeeklyTypeDates(today, 4));
+    renderTypeSection('monthlySection', acts, logsMap, 'monthly', getMonthlyTypeDates(today, 5));
   })();
+
+  function renderTypeSection(containerId, acts, logsMap, type, dateList){
+    const container = document.getElementById(containerId);
+    const typeActs = acts.filter(a => a.recurrence_type === type);
+
+    if (typeActs.length === 0) {
+      const label = type === 'daily' ? 'harian' : (type === 'weekly' ? 'mingguan' : 'bulanan');
+      container.innerHTML = `<p class="empty-note" style="padding:0; text-align:left;">Belum ada aktivitas ${label}.</p>`;
+      return;
+    }
+
+    const perf = computeTypePerformance(acts, logsMap, type, dateList);
+    const ranking = computeTypeRanking(acts, logsMap, type, dateList);
+
+    let html = `
+      <div class="type-percent-row">
+        <span class="type-percent-value">${perf.percent}%</span>
+        <div class="type-percent-bar"><div class="type-percent-fill" style="width:${perf.percent}%;"></div></div>
+      </div>
+    `;
+
+    if (ranking.length === 0) {
+      html += `<p class="empty-note" style="padding:0; text-align:left;">Belum cukup data di periode ini.</p>`;
+    } else {
+      const top = ranking[0];
+      const bottom = ranking[ranking.length - 1];
+
+      html += `<p style="margin:0 0 6px; font-size:10.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Paling konsisten</p>`;
+      html += rankLine(top, 'var(--peach)');
+
+      if (ranking.length > 1) {
+        html += `<p style="margin:12px 0 6px; font-size:10.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Paling tidak konsisten</p>`;
+        html += rankLine(bottom, 'var(--danger)');
+      }
+    }
+
+    container.innerHTML = html;
+  }
+
+  function rankLine(item, dotColor){
+    return `
+      <div class="rank-line">
+        <span class="rank-dot" style="background:${dotColor};"></span>
+        <span style="font-size:13.5px; flex:1;">${escapeHtml(item.activity.subject)}</span>
+        <span style="font-size:12px; color:var(--text-secondary);">${item.percent}%</span>
+      </div>
+    `;
+  }
 
   function escapeHtml(str){
     const div = document.createElement('div');

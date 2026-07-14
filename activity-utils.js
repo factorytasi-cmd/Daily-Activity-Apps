@@ -35,6 +35,12 @@ function isToday(date){
 
 /** Apakah sebuah activity jatuh tempo pada tanggal tertentu. */
 function isActivityDueOnDate(activity, date){
+  const dateKey = formatDateKey(date);
+
+  // Hormati batas tanggal efektif (mulai berlaku / berhenti berlaku)
+  if (activity.effective_from && dateKey < activity.effective_from) return false;
+  if (activity.effective_until && dateKey > activity.effective_until) return false;
+
   if (activity.recurrence_type === 'daily') return true;
 
   if (activity.recurrence_type === 'weekly') {
@@ -227,11 +233,88 @@ function computeMonthlyBreakdownArchiveAware(activities, logsMap, monthlyStatsMa
   return result;
 }
 
+// =========================================================
+// Performance & ranking per TIPE activity (Harian/Mingguan/Bulanan)
+// Dipakai di Dashboard versi baru -- terpisah dari breakdown rentang waktu.
+// =========================================================
+
+/** Kumpulan tanggal buat tipe "harian": 7 hari terakhir, TIDAK termasuk hari ini. */
+function getDailyTypeDates(today, daysBack){
+  const dates = [];
+  for (let i = 1; i <= daysBack; i++){
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+/** Kumpulan tanggal buat tipe "mingguan": N minggu PENUH sebelumnya, TIDAK termasuk minggu berjalan. */
+function getWeeklyTypeDates(today, weeksBack){
+  const currentMonday = new Date(today);
+  currentMonday.setDate(currentMonday.getDate() - (isoWeekday(today) - 1));
+
+  const dates = [];
+  for (let w = 1; w <= weeksBack; w++){
+    const weekStart = new Date(currentMonday); weekStart.setDate(weekStart.getDate() - 7*w);
+    for (let i = 0; i < 7; i++){
+      const d = new Date(weekStart); d.setDate(d.getDate() + i);
+      dates.push(d);
+    }
+  }
+  return dates;
+}
+
+/** Kumpulan tanggal buat tipe "bulanan": N bulan kalender PENUH sebelumnya, TIDAK termasuk bulan berjalan. */
+function getMonthlyTypeDates(today, monthsBack){
+  const dates = [];
+  for (let m = 1; m <= monthsBack; m++){
+    const monthDate = new Date(today.getFullYear(), today.getMonth() - m, 1);
+    const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0).getDate();
+    for (let day = 1; day <= daysInMonth; day++){
+      dates.push(new Date(monthDate.getFullYear(), monthDate.getMonth(), day));
+    }
+  }
+  return dates;
+}
+
+/** Performance keseluruhan (persentase) untuk 1 tipe activity, dalam rentang waktunya sendiri. */
+function computeTypePerformance(activities, logsMap, type, dateList){
+  const typeActivities = activities.filter(a => a.recurrence_type === type);
+  let due = 0, done = 0;
+  typeActivities.forEach(a => {
+    dateList.forEach(d => {
+      if (isActivityDueOnDate(a, d)){
+        due++;
+        if (logsMap[`${a.id}|${formatDateKey(d)}`] === true) done++;
+      }
+    });
+  });
+  return { due, done, percent: due > 0 ? Math.round((done/due)*100) : 0 };
+}
+
+/** Ranking activity dalam 1 tipe, dalam rentang waktunya sendiri. */
+function computeTypeRanking(activities, logsMap, type, dateList){
+  const typeActivities = activities.filter(a => a.recurrence_type === type);
+  const results = typeActivities.map(a => {
+    let due = 0, done = 0;
+    dateList.forEach(d => {
+      if (isActivityDueOnDate(a, d)){
+        due++;
+        if (logsMap[`${a.id}|${formatDateKey(d)}`] === true) done++;
+      }
+    });
+    return { activity: a, due, done, percent: due > 0 ? Math.round((done/due)*100) : 0 };
+  }).filter(r => r.due > 0);
+
+  results.sort((x,y) => y.percent - x.percent);
+  return results;
+}
+
 function ringkasJadwal(activity){
   if (activity.recurrence_type === 'daily') return 'Setiap hari';
   if (activity.recurrence_type === 'weekly') {
     const hari = (activity.weekly_days || []).map(n => NAMA_HARI[n-1]);
-    return hari.length ? `Setiap ${hari.join(', ')}` : 'Weekly';
+    return hari.length ? `Setiap ${hari.join(', ')}` : 'Mingguan';
   }
   if (activity.recurrence_type === 'monthly') {
     if (activity.monthly_mode === 'fixed_date') return `Tanggal ${activity.monthly_date} tiap bulan`;

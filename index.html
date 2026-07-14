@@ -17,8 +17,8 @@
   </div>
 
   <div class="tab-switch">
-    <button id="tabLogin" class="active">Login</button>
-    <button id="tabSignup">Sign up</button>
+    <button id="tabLogin" class="active">Masuk</button>
+    <button id="tabSignup">Daftar</button>
   </div>
 
   <!-- LOGIN FORM -->
@@ -26,9 +26,9 @@
     <p class="field-label">Email</p>
     <input class="field-input" type="email" id="loginEmail" placeholder="nama@email.com" required>
 
-    <p class="field-label">Password</p>
+    <p class="field-label">Kata sandi</p>
     <div class="input-wrapper">
-      <input class="field-input" type="password" id="loginPassword" placeholder="Masukkan password" required>
+      <input class="field-input" type="password" id="loginPassword" placeholder="Masukkan kata sandi" required>
       <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Tampilkan password"><i class="ti ti-eye"></i></button>
     </div>
 
@@ -43,7 +43,7 @@
 
   <!-- FORGOT PASSWORD FORM -->
   <form id="forgotForm" style="display:none;">
-    <p style="font-size:12.5px; color:var(--text-secondary); margin:0 0 16px;">Masukkan email akunmu, nanti dikirim link buat bikin password baru.</p>
+    <p style="font-size:12.5px; color:var(--text-secondary); margin:0 0 16px;">Masukkan email akunmu, nanti dikirim link buat bikin kata sandi baru.</p>
 
     <p class="field-label">Email</p>
     <input class="field-input" type="email" id="forgotEmail" placeholder="nama@email.com" required>
@@ -53,7 +53,7 @@
 
     <button class="btn-primary" type="submit" id="forgotSubmit">Kirim link reset</button>
     <p style="text-align:center; margin:14px 0 0;">
-      <a href="#" id="backToLoginLink" style="font-size:12px; color:var(--text-secondary); text-decoration:none;">&#8592; Kembali ke login</a>
+      <a href="#" id="backToLoginLink" style="font-size:12px; color:var(--text-secondary); text-decoration:none;">&#8592; Kembali ke halaman masuk</a>
     </p>
   </form>
 
@@ -65,7 +65,7 @@
     <p class="field-label">Email</p>
     <input class="field-input" type="email" id="signupEmail" placeholder="nama@email.com" required>
 
-    <p class="field-label">Password</p>
+    <p class="field-label">Kata sandi</p>
     <div class="input-wrapper">
       <input class="field-input" type="password" id="signupPassword" placeholder="Minimal 6 karakter" minlength="6" required>
       <button type="button" class="toggle-password" data-target="signupPassword" aria-label="Tampilkan password"><i class="ti ti-eye"></i></button>
@@ -139,7 +139,7 @@
 
     try {
       await signUp(email, password, fullName);
-      infoEl.textContent = 'Akun dibuat. Cek email kamu untuk konfirmasi, lalu login lewat tab Login.';
+      infoEl.textContent = 'Akun dibuat. Cek email kamu untuk konfirmasi, lalu masuk lewat tab Masuk.';
       signupForm.reset();
       submitBtn.disabled = false;
       submitBtn.textContent = 'Buat akun';
@@ -151,9 +151,9 @@
   });
 
   function terjemahkanError(msg) {
-    if (msg.includes('Invalid login credentials')) return 'Email atau password salah.';
+    if (msg.includes('Invalid login credentials')) return 'Email atau kata sandi salah.';
     if (msg.includes('already registered')) return 'Email ini sudah terdaftar.';
-    if (msg.includes('Password should be')) return 'Password minimal 6 karakter.';
+    if (msg.includes('Password should be')) return 'Kata sandi minimal 6 karakter.';
     if (msg.includes('Email not confirmed')) return 'Email belum dikonfirmasi. Cek inbox kamu.';
     return msg;
   }

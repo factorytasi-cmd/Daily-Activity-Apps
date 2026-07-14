@@ -41,7 +41,7 @@
     </div>
     <div style="flex:1; background:var(--card); border-radius:14px; padding:12px; text-align:center;">
       <p style="margin:0; font-size:17px; font-weight:600;" id="statTotal">0</p>
-      <p style="margin:1px 0 0; font-size:10.5px; color:var(--text-secondary);">Total activity</p>
+      <p style="margin:1px 0 0; font-size:10.5px; color:var(--text-secondary);">Total aktivitas</p>
     </div>
     <div style="flex:1; background:var(--card); border-radius:14px; padding:12px; text-align:center;">
       <p style="margin:0; font-size:17px; font-weight:600;" id="statAvg">0%</p>
@@ -69,8 +69,8 @@
 </div>
 
 <div class="bottom-nav">
-  <a href="home.html" class="nav-item"><i class="ti ti-home-filled"></i><span>Home</span></a>
-  <a href="daily-activity.html" class="nav-item"><i class="ti ti-calendar-check"></i><span>Activity</span></a>
+  <a href="home.html" class="nav-item"><i class="ti ti-home-filled"></i><span>Beranda</span></a>
+  <a href="daily-activity.html" class="nav-item"><i class="ti ti-calendar-check"></i><span>Aktivitas</span></a>
   <a href="dashboard.html" class="nav-item"><i class="ti ti-chart-bar"></i><span>Dashboard</span></a>
   <a href="profile.html" class="nav-item active"><i class="ti ti-user"></i><span>Profil</span></a>
 </div>
@@ -158,7 +158,7 @@
   // ---- Akun rows (info pribadi, password, motto) ----
   function renderAccountRows(){
     renderViewRow('rowFullName', 'ti-user', 'Nama lengkap', currentProfile.full_name || '-', () => renderEditNameForm());
-    renderViewRow('rowPassword', 'ti-lock', 'Ubah password', 'Tap untuk ubah', () => renderPasswordForm());
+    renderViewRow('rowPassword', 'ti-lock', 'Ubah kata sandi', 'Tap untuk ubah', () => renderPasswordForm());
     renderViewRow('rowMotto', 'ti-message-2', 'Motto harian', currentProfile.motto || '-', () => renderMottoForm());
   }
 
@@ -208,7 +208,7 @@
     row.onclick = null;
     row.innerHTML = `
       <div style="flex:1;">
-        <input type="password" class="field-input" id="newPasswordInput" placeholder="Password baru (min. 6 karakter)" style="margin-bottom:8px; padding:8px 10px;">
+        <input type="password" class="field-input" id="newPasswordInput" placeholder="Kata sandi baru (min. 6 karakter)" style="margin-bottom:8px; padding:8px 10px;">
         <p class="error-text" id="passwordError" style="margin:0;"></p>
       </div>
       <div style="display:flex; gap:6px; margin-left:8px;">
@@ -226,7 +226,7 @@
       if (error) { errorEl.textContent = error.message; return; }
 
       renderAccountRows();
-      alert('Password berhasil diubah.');
+      alert('Kata sandi berhasil diubah.');
     });
   }
 
@@ -260,7 +260,7 @@
     const windowStart = new Date(today); windowStart.setDate(windowStart.getDate() - 59);
 
     const { data: activities } = await supabaseClient
-      .from('activities').select('*').eq('user_id', currentUser.id).eq('is_active', true);
+      .from('activities').select('*').eq('user_id', currentUser.id);
 
     const { data: logs } = await supabaseClient
       .from('checklist_logs').select('activity_id, log_date, is_done')
@@ -269,7 +269,7 @@
     const acts = activities || [];
     const logsMap = buildLogsMap(logs);
 
-    document.getElementById('statTotal').textContent = acts.length;
+    document.getElementById('statTotal').textContent = acts.filter(a => !a.effective_until).length;
     document.getElementById('statStreak').textContent = computeStreak(acts, logsMap, today);
     const week = computeWeekProgress(acts, logsMap, today);
     document.getElementById('statAvg').textContent = `${week.percent}%`;
