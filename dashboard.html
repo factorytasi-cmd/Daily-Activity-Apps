@@ -170,60 +170,86 @@
     renderReasonStats(acts, reflections || []);
   })();
 
+  let reflectionsGlobal = [];
+  let activityMapGlobal = {};
+
   function renderReasonStats(acts, reflections){
     const container = document.getElementById('reasonStatsSection');
+    reflectionsGlobal = reflections;
+    activityMapGlobal = {};
+    acts.forEach(a => { activityMapGlobal[a.id] = a.subject; });
 
     if (reflections.length === 0) {
       container.innerHTML = '<p class="empty-note" style="padding:0; text-align:left;">Belum ada catatan alasan.</p>';
       return;
     }
 
-    const reasonLabels = { sibuk:'Sibuk', malas:'Malas', bepergian:'Bepergian', sakit:'Sakit', lainnya:'Lainnya' };
-
-    // Jumlah per alasan
     const reasonCounts = {};
     reflections.forEach(r => { reasonCounts[r.reason] = (reasonCounts[r.reason] || 0) + 1; });
     const reasonEntries = Object.entries(reasonCounts).sort((a,b) => b[1] - a[1]);
     const maxReasonCount = reasonEntries[0][1];
 
-    let html = `<p style="margin:0 0 10px; font-size:10.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Jumlah per alasan</p>`;
+    let html = `<p style="margin:0 0 10px; font-size:10.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Jumlah per alasan &middot; tap untuk lihat rinciannya</p>`;
     reasonEntries.forEach(([reason, count]) => {
       const pct = Math.round((count / maxReasonCount) * 100);
       html += `
-        <div class="reason-stat-row">
+        <div class="reason-stat-row" data-reason-row="${reason}" style="cursor:pointer;">
           <div class="reason-stat-label">
-            <span>${reasonLabels[reason] || reason}</span>
+            <span>${reasonLabelText(reason)}</span>
             <span style="color:var(--text-secondary);">${count}x</span>
           </div>
-          <div class="reason-stat-bar"><div class="reason-stat-fill" style="width:${pct}%;"></div></div>
+          <div class="reason-stat-bar"><div class="reason-stat-fill" data-reason-fill="${reason}" style="width:${pct}%;"></div></div>
         </div>
       `;
     });
 
-    // Activity paling sering tidak tercapai
+    html += `<p style="margin:16px 0 8px; font-size:10.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;" id="reasonDetailTitle">Activity paling sering karena ${reasonLabelText(reasonEntries[0][0])}</p>`;
+    html += `<div id="reasonDetailList"></div>`;
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-reason-row]').forEach(row => {
+      row.addEventListener('click', () => selectReason(row.dataset.reasonRow));
+    });
+
+    selectReason(reasonEntries[0][0]);
+  }
+
+  function reasonLabelText(reason){
+    const map = { sibuk:'Sibuk', malas:'Malas', bepergian:'Bepergian', sakit:'Sakit', lainnya:'Lainnya' };
+    return map[reason] || reason;
+  }
+
+  function selectReason(reason){
+    document.querySelectorAll('[data-reason-row]').forEach(row => {
+      row.style.background = row.dataset.reasonRow === reason ? 'rgba(224,142,117,0.10)' : 'transparent';
+      row.style.borderRadius = '10px';
+      row.style.padding = row.dataset.reasonRow === reason ? '6px 8px' : '0';
+    });
+    document.querySelectorAll('[data-reason-fill]').forEach(fill => {
+      fill.style.background = fill.dataset.reasonFill === reason ? 'var(--peach)' : 'var(--danger)';
+    });
+
+    document.getElementById('reasonDetailTitle').textContent = `Activity paling sering karena ${reasonLabelText(reason)}`;
+
     const activityCounts = {};
-    reflections.forEach(r => { activityCounts[r.activity_id] = (activityCounts[r.activity_id] || 0) + 1; });
+    reflectionsGlobal.filter(r => r.reason === reason).forEach(r => {
+      activityCounts[r.activity_id] = (activityCounts[r.activity_id] || 0) + 1;
+    });
 
-    const activityMap = {};
-    acts.forEach(a => { activityMap[a.id] = a.subject; });
-
-    const activityEntries = Object.entries(activityCounts)
-      .map(([activityId, count]) => ({ subject: activityMap[activityId] || '(activity terhapus)', count }))
+    const entries = Object.entries(activityCounts)
+      .map(([activityId, count]) => ({ subject: activityMapGlobal[activityId] || '(activity terhapus)', count }))
       .sort((a,b) => b.count - a.count)
       .slice(0, 5);
 
-    html += `<p style="margin:16px 0 8px; font-size:10.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Activity paling sering tidak tercapai</p>`;
-    activityEntries.forEach(item => {
-      html += `
-        <div class="rank-line">
-          <span class="rank-dot" style="background:var(--danger);"></span>
-          <span style="font-size:13.5px; flex:1;">${escapeHtml(item.subject)}</span>
-          <span style="font-size:12px; color:var(--text-secondary);">${item.count}x</span>
-        </div>
-      `;
-    });
-
-    container.innerHTML = html;
+    const listEl = document.getElementById('reasonDetailList');
+    listEl.innerHTML = entries.map(item => `
+      <div class="rank-line">
+        <span class="rank-dot" style="background:var(--danger);"></span>
+        <span style="font-size:13.5px; flex:1;">${escapeHtml(item.subject)}</span>
+        <span style="font-size:12px; color:var(--text-secondary);">${item.count}x</span>
+      </div>
+    `).join('');
   }
 
   function renderTypeSection(containerId, acts, logsMap, type, dateList){
