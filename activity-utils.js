@@ -27,6 +27,46 @@ function formatDisplayDate(date){
   return `${NAMA_HARI[isoWeekday(date)-1]}, ${date.getDate()} ${NAMA_BULAN[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+/** Progress hari ini saja. */
+function computeTodayProgress(activities, logsMap, today){
+  const due = activities.filter(a => isActivityDueOnDate(a, today));
+  const done = due.filter(a => logsMap[`${a.id}|${formatDateKey(today)}`] === true).length;
+  return { due: due.length, done, percent: due.length > 0 ? Math.round((done/due.length)*100) : 0 };
+}
+
+/** Progress minggu ini (Senin s.d. hari ini, minggu berjalan/belum selesai). */
+function computeThisWeekProgress(activities, logsMap, today){
+  const monday = new Date(today); monday.setDate(monday.getDate() - (isoWeekday(today) - 1));
+  let due = 0, done = 0;
+  for (let d = new Date(monday); d.getTime() <= today.getTime(); d.setDate(d.getDate()+1)){
+    const dayDue = activities.filter(a => isActivityDueOnDate(a, d));
+    due += dayDue.length;
+    done += dayDue.filter(a => logsMap[`${a.id}|${formatDateKey(d)}`] === true).length;
+  }
+  return { due, done, percent: due > 0 ? Math.round((done/due)*100) : 0 };
+}
+
+/** Progress bulan ini (tanggal 1 s.d. hari ini, bulan berjalan/belum selesai). */
+function computeThisMonthProgress(activities, logsMap, today){
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  let due = 0, done = 0;
+  for (let d = new Date(firstOfMonth); d.getTime() <= today.getTime(); d.setDate(d.getDate()+1)){
+    const dayDue = activities.filter(a => isActivityDueOnDate(a, d));
+    due += dayDue.length;
+    done += dayDue.filter(a => logsMap[`${a.id}|${formatDateKey(d)}`] === true).length;
+  }
+  return { due, done, percent: due > 0 ? Math.round((done/due)*100) : 0 };
+}
+
+/** Ambil top-N dan bottom-N dari ranking tanpa overlap. */
+function pickTopBottom(ranking, n){
+  if (ranking.length <= n) return { top: ranking, bottom: [] };
+  const top = ranking.slice(0, n);
+  const remaining = ranking.slice(n);
+  const bottom = remaining.slice(-n).reverse(); // paling tidak konsisten ditampilkan duluan
+  return { top, bottom };
+}
+
 function isToday(date){
   const t = new Date(); t.setHours(0,0,0,0);
   const d = new Date(date); d.setHours(0,0,0,0);
