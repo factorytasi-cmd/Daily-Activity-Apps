@@ -53,6 +53,28 @@
   <div id="listContainer"></div>
 </div>
 
+<div id="reasonSheetBackdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:20;"></div>
+<div id="reasonSheet" style="display:none; position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:400px; background:var(--card); border:0.5px solid var(--border); border-radius:20px 20px 0 0; padding:18px 22px 26px; z-index:21; box-sizing:border-box;">
+  <div style="width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 16px;"></div>
+  <p style="margin:0 0 4px; font-size:14px; font-weight:700;" id="sheetTitle">Kenapa aktivitas ini belum tercapai?</p>
+  <p style="margin:0 0 14px; font-size:11.5px; color:var(--text-secondary);" id="sheetDate"></p>
+
+  <div id="sheetChipRow" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+    <div class="reason-chip" data-reason="sibuk">Sibuk</div>
+    <div class="reason-chip" data-reason="malas">Malas</div>
+    <div class="reason-chip" data-reason="bepergian">Sedang bepergian</div>
+    <div class="reason-chip" data-reason="sakit">Sakit</div>
+    <div class="reason-chip" data-reason="lainnya">Lainnya</div>
+  </div>
+
+  <input type="text" class="field-input" id="sheetCustomInput" placeholder="Sebutkan alasannya" style="display:none;">
+  <textarea class="field-input" id="sheetRemarkInput" rows="2" placeholder="Catatan (opsional)" style="resize:vertical; font-family:inherit;"></textarea>
+
+  <p class="error-text" id="sheetError" style="margin-top:8px;"></p>
+
+  <button class="btn-primary" id="sheetSaveBtn" style="margin-top:6px;">Simpan</button>
+</div>
+
 <a href="add-activity.html" class="fab" aria-label="Tambah aktivitas"><i class="ti ti-plus"></i></a>
 
 <div class="bottom-nav">
@@ -141,6 +163,16 @@
     const doneMap = {};
     (logs || []).forEach(l => { doneMap[l.activity_id] = l.is_done; });
 
+    const { data: reflections } = await supabaseClient
+      .from('activity_reflections')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .eq('log_date', dateKey)
+      .in('activity_id', activityIds);
+
+    const reflectionMap = {};
+    (reflections || []).forEach(r => { reflectionMap[r.activity_id] = r; });
+
     const doneCount = dueToday.filter(a => doneMap[a.id]).length;
     progressRow.style.display = 'flex';
     document.getElementById('progressFill').style.width = `${(doneCount / dueToday.length) * 100}%`;
@@ -149,20 +181,109 @@
     listContainer.innerHTML = '';
     dueToday.forEach(activity => {
       const isDone = !!doneMap[activity.id];
+      const reflection = reflectionMap[activity.id];
 
       const row = document.createElement('div');
       row.className = 'checklist-item' + (isDone ? ' done' : '');
+
+      let badgeHtml = '';
+      if (!isDone) {
+        badgeHtml = reflection
+          ? `<div class="reason-badge" data-reason-btn="${activity.id}"><i class="ti ti-message-circle" style="font-size:12px; color:var(--danger);"></i><span style="font-size:10px; color:var(--danger); font-weight:600;">${escapeHtml(labelAlasan(reflection))}</span></div>`
+          : `<div class="reason-icon-empty" data-reason-btn="${activity.id}"><i class="ti ti-message-circle" style="font-size:13px; color:var(--text-faint);"></i></div>`;
+      }
+
       row.innerHTML = `
-        <div class="check-circle ${isDone ? 'checked' : ''}">${isDone ? '<i class="ti ti-check"></i>' : ''}</div>
-        <div>
+        <div class="check-circle ${isDone ? 'checked' : ''}" data-toggle="${activity.id}">${isDone ? '<i class="ti ti-check"></i>' : ''}</div>
+        <div style="flex:1; min-width:0;">
           <p class="ci-title">${escapeHtml(activity.subject)}</p>
           <p class="ci-time">${activity.activity_time.slice(0,5)}</p>
         </div>
+        ${badgeHtml}
       `;
-      row.addEventListener('click', () => toggleDone(activity.id, dateKey, !isDone));
+      row.querySelector('[data-toggle]').addEventListener('click', () => toggleDone(activity.id, dateKey, !isDone));
+      const badgeEl = row.querySelector('[data-reason-btn]');
+      if (badgeEl) badgeEl.addEventListener('click', () => bukaSheetAlasan(activity, dateKey, reflection));
+
       listContainer.appendChild(row);
     });
   }
+
+  function labelAlasan(r){
+    const labelMap = { sibuk:'Sibuk', malas:'Malas', bepergian:'Bepergian', sakit:'Sakit', lainnya: r.reason_custom_label || 'Lainnya' };
+    return labelMap[r.reason] || r.reason;
+  }
+
+  // ---- Bottom sheet alasan per-activity ----
+  let sheetContext = null; // { activityId, dateKey }
+
+  function bukaSheetAlasan(activity, dateKey, existing){
+    sheetContext = { activityId: activity.id, dateKey };
+
+    document.getElementById('sheetTitle').textContent = `Kenapa "${activity.subject}" belum tercapai?`;
+    document.getElementById('sheetDate').textContent = formatDisplayDate(currentDate);
+    document.getElementById('sheetError').textContent = '';
+
+    document.querySelectorAll('.reason-chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('sheetCustomInput').style.display = 'none';
+    document.getElementById('sheetCustomInput').value = '';
+    document.getElementById('sheetRemarkInput').value = '';
+
+    if (existing) {
+      const chip = document.querySelector(`.reason-chip[data-reason="${existing.reason}"]`);
+      if (chip) chip.classList.add('selected');
+      if (existing.reason === 'lainnya') {
+        document.getElementById('sheetCustomInput').style.display = 'block';
+        document.getElementById('sheetCustomInput').value = existing.reason_custom_label || '';
+      }
+      document.getElementById('sheetRemarkInput').value = existing.remark || '';
+    }
+
+    document.getElementById('reasonSheetBackdrop').style.display = 'block';
+    document.getElementById('reasonSheet').style.display = 'block';
+  }
+
+  function tutupSheetAlasan(){
+    document.getElementById('reasonSheetBackdrop').style.display = 'none';
+    document.getElementById('reasonSheet').style.display = 'none';
+    sheetContext = null;
+  }
+
+  document.getElementById('reasonSheetBackdrop').addEventListener('click', tutupSheetAlasan);
+
+  document.querySelectorAll('.reason-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.reason-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      document.getElementById('sheetCustomInput').style.display = chip.dataset.reason === 'lainnya' ? 'block' : 'none';
+    });
+  });
+
+  document.getElementById('sheetSaveBtn').addEventListener('click', async () => {
+    if (!sheetContext) return;
+    const selected = document.querySelector('.reason-chip.selected');
+    const errorEl = document.getElementById('sheetError');
+
+    if (!selected) {
+      errorEl.textContent = 'Pilih salah satu alasan dulu.';
+      return;
+    }
+
+    const { error } = await supabaseClient.from('activity_reflections').upsert({
+      user_id: currentUser.id,
+      activity_id: sheetContext.activityId,
+      log_date: sheetContext.dateKey,
+      reason: selected.dataset.reason,
+      reason_custom_label: selected.dataset.reason === 'lainnya' ? document.getElementById('sheetCustomInput').value.trim() : null,
+      remark: document.getElementById('sheetRemarkInput').value.trim() || null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'activity_id,log_date' });
+
+    if (error) { errorEl.textContent = error.message; return; }
+
+    tutupSheetAlasan();
+    renderChecklist();
+  });
 
   async function toggleDone(activityId, dateKey, newValue){
     await supabaseClient.from('checklist_logs').upsert({
