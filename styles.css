@@ -453,28 +453,14 @@ body{
 }
 .manage-row .mr-title{font-size:14px; margin:0; font-weight:600;}
 .manage-row .mr-sub{font-size:11.5px; color:var(--text-secondary); margin:2px 0 0;}
-.manage-row .mr-edit{
-  margin-left:auto;
-  background:none;
-  border:none;
-  color:var(--peach-light);
-  font-size:16px;
-  cursor:pointer;
-  padding:4px;
-  text-decoration:none;
-  flex-shrink:0;
-  display:inline-flex;
-  align-items:center;
-}
 .manage-row .mr-delete{
-  margin-left:4px;
+  margin-left:auto;
   background:none;
   border:none;
   color:var(--danger);
   font-size:16px;
   cursor:pointer;
   padding:4px;
-  flex-shrink:0;
 }
 
 .loading-screen{

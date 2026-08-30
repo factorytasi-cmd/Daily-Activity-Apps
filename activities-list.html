@@ -46,8 +46,6 @@
   <div id="listContainer"></div>
 </div>
 
-<a href="add-activity.html" class="fab" id="addFab" aria-label="Tambah aktivitas"><i class="ti ti-plus"></i></a>
-
 <div class="bulk-bar" id="bulkBar">
   <span style="font-size:12.5px;" id="bulkCount">0 dipilih</span>
   <button id="bulkDeleteBtn" style="background:var(--danger); border:none; border-radius:10px; color:var(--bg); font-size:12.5px; font-weight:600; padding:8px 14px; cursor:pointer;">Hapus terpilih</button>
@@ -137,14 +135,11 @@
 
   function updateBulkBar(){
     const bar = document.getElementById('bulkBar');
-    const fab = document.getElementById('addFab');
     if (selectedIds.size > 0) {
       bar.style.display = 'flex';
-      fab.style.display = 'none';
       document.getElementById('bulkCount').textContent = `${selectedIds.size} dipilih`;
     } else {
       bar.style.display = 'none';
-      fab.style.display = 'flex';
     }
   }
 
